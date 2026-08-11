@@ -1,2 +1,1 @@
-// Deprecated: moved to common module
-// public enum UserRole { ... }
+// Deprecated: UserRole enum moved to common module. This file intentionally left empty.
