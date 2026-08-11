@@ -1,5 +1,5 @@
 server:
-  port: 8085
+  port: 8084
 
 spring:
   datasource:
@@ -11,6 +11,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
   kafka:
     bootstrap-servers: localhost:9092
     producer:
@@ -19,6 +20,12 @@ spring:
     topic:
       transaction: transactions
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
 jwt:
-  secret: YOUR_JWT_SECRET
+  secret: bW9yZV9zZWN1cmVfand0X3NlY3JldF9iYWVsX2Zvcl9lbmNvZGluZ19saW5l
   expirationMs: 86400000

@@ -1,6 +1,31 @@
 server:
   port: 8081
 
-jwt:
-  secret: YOUR_JWT_SECRET
-  expirationMs: 86400000
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/auth_db?useSSL=false&serverTimezone=UTC
+    username: root
+    password: israelenspy
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    topic:
+      transaction: transactions
+
+  jwt:
+    secret: bW9yZV9zZWN1cmVfand0X3NlY3JldF9iYWVsX2Zvcl9lbmNvZGluZ19saW5l
+    expirationMs: 86400000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

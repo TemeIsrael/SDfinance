@@ -11,7 +11,15 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    topic:
+      transaction: transactions
 
-jwt:
-  secret: YOUR_JWT_SECRET
-  expirationMs: 86400000
+  jwt:
+    secret: bW9yZV9zZWN1cmVfand0X3NlY3JldF9iYWVsX2Zvcl9lbmNvZGluZ19saW5l
+    expirationMs: 86400000
