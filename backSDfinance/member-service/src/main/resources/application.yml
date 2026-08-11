@@ -1,0 +1,6 @@
+server:
+  port: 8082
+
+jwt:
+  secret: YOUR_JWT_SECRET
+  expirationMs: 86400000

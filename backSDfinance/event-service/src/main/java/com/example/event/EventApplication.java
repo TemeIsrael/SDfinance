@@ -1,13 +1,13 @@
-package com.example.auth;
+package com.example.event;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.example.auth", "com.example.common"})
-public class AuthApplication {
+@ComponentScan(basePackages = {"com.example.event", "com.example.common"})
+public class EventApplication {
     public static void main(String[] args) {
-        SpringApplication.run(AuthApplication.class, args);
+        SpringApplication.run(EventApplication.class, args);
     }
 }
