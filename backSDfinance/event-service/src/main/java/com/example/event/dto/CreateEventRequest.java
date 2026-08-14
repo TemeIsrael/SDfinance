@@ -12,4 +12,5 @@ public class CreateEventRequest {
     private String description;
     private LocalDateTime startDate;
     private String location;
+    private Long groupeId;
 }

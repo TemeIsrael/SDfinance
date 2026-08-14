@@ -1,24 +1,39 @@
 <template>
-  <!-- Menu latéral de l'app connectée (style gestionTransactions.html) -->
+  <!-- Menu latéral de l'app connectée -->
   <nav class="menuNav">
     <ul class="menu-list">
-      <li class="menu-item">
-        <RouterLink to="/app/membres" class="menu-link" active-class="active">Membres</RouterLink>
+      <li class="menu-item" v-if="canViewMembers">
+        <RouterLink to="/membres" class="menu-link" active-class="active">Membres</RouterLink>
       </li>
-      <li class="menu-item">
-        <RouterLink to="/app/evenements" class="menu-link" active-class="active">Événements</RouterLink>
+      <li class="menu-item" v-if="canViewEvents">
+        <RouterLink to="/evenements" class="menu-link" active-class="active">Événements</RouterLink>
       </li>
-      <li class="menu-item">
-        <RouterLink to="/app/transactions" class="menu-link" active-class="active">Infos caisses</RouterLink>
+      <li class="menu-item" v-if="canViewFinance">
+        <RouterLink to="/transactions" class="menu-link" active-class="active">Infos caisses</RouterLink>
       </li>
-      <li class="menu-item">
-        <RouterLink to="/app/discussion" class="menu-link" active-class="active">Discussion</RouterLink>
+      <li class="menu-item" v-if="canUseMessaging">
+        <RouterLink to="/discussion" class="menu-link" active-class="active">Discussion</RouterLink>
+      </li>
+      <li class="menu-item" v-if="canManageUsers">
+        <RouterLink to="/admin/utilisateurs" class="menu-link" active-class="active">Utilisateurs</RouterLink>
       </li>
     </ul>
   </nav>
 </template>
 
-<script setup></script>
+<script setup>
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { hasPermission } from '@/utils/permissions'
+
+const { currentRole } = useAuthStore()
+
+const canViewMembers = computed(() => hasPermission(currentRole.value, 'members', 'canView'))
+const canViewEvents = computed(() => hasPermission(currentRole.value, 'events', 'canView'))
+const canViewFinance = computed(() => hasPermission(currentRole.value, 'finance', 'canView') || hasPermission(currentRole.value, 'finance', 'canViewPersonal'))
+const canUseMessaging = computed(() => hasPermission(currentRole.value, 'messaging', 'canUse'))
+const canManageUsers = computed(() => hasPermission(currentRole.value, 'users', 'canManage'))
+</script>
 
 <style scoped>
 .menuNav {

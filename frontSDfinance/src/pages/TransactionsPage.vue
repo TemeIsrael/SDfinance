@@ -19,7 +19,7 @@
     <!-- Transactions -->
     <div class="transaction">
       <!-- Formulaire ajout -->
-      <div class="AjoutTrans">
+      <div class="AjoutTrans" v-if="canManageFinance">
         <h4>Ajouter une transaction</h4>
         <form id="form-transaction" @submit.prevent="ajouterTransaction">
           <label for="desc">Description</label>
@@ -50,17 +50,19 @@
               <th>Description</th>
               <th>Montant</th>
               <th>Motif</th>
+              <th>Groupe</th>
               <th>Date</th>
             </tr>
           </thead>
           <tbody class="tbBody">
             <tr v-if="isLoading">
-              <td colspan="4">Chargement…</td>
+              <td colspan="5">Chargement…</td>
             </tr>
             <tr v-for="t in transactions" :key="t.id">
               <td>{{ t.description }}</td>
               <td>{{ formatCurrency(t.montant) }}</td>
               <td>{{ t.motif }}</td>
+              <td>{{ getGroupeLabel(t.groupeId || t.groupe) }}</td>
               <td>{{ t.date }}</td>
             </tr>
           </tbody>
@@ -93,7 +95,7 @@
         <div v-if="caisseSelectionnee.id === 'fonctionnement'" class="detail1">
           <div class="AfficTrans">
             <h4>Liste de la caisse de fonctionnement</h4>
-            <div class="filtres">
+            <div class="filtres" v-if="currentRole === 'LEADER'">
               <select v-model="membreFiltre" class="input-annee">
                 <option v-for="option in groupeOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
@@ -126,20 +128,10 @@
             </table>
           </div>
 
-          <div class="AjoutTrans">
+          <div class="AjoutTrans" v-if="canManageFinance">
             <form @submit.prevent="ajouterMembreCaisse">
               <h4>Ajouter un membre</h4>
               <input type="text" v-model="newMembreCaisse.nom" placeholder="Nom et prénom" />
-              <select v-model="newMembreCaisse.groupe">
-                <option value="">-- Sélectionnez un groupe --</option>
-                <option
-                  v-for="option in groupeFormOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
               <div class="pourAjout">
                 <button class="btn" type="submit">Ajouter</button>
               </div>
@@ -178,6 +170,7 @@
                   <th>Nom</th>
                   <th>Montant</th>
                   <th v-if="caisseSelectionnee?.id === 'offrandes'">Type</th>
+                  <th>Groupe</th>
                   <th>Date</th>
                 </tr>
               </thead>
@@ -186,6 +179,7 @@
                   <td>{{ p.nom }}</td>
                   <td>{{ formatCurrency(p.montant) }}</td>
                   <td>{{ p.type }}</td>
+                  <td>{{ getGroupeLabel(p.groupeId || p.groupe) }}</td>
                   <td>{{ p.date }}</td>
                 </tr>
               </tbody>
@@ -193,6 +187,7 @@
                 <tr v-for="item in autresCaissesFiltres" :key="item.id">
                   <td>{{ item.nom }}</td>
                   <td>{{ formatCurrency(item.montant) }}</td>
+                  <td>{{ getGroupeLabel(item.groupeId || item.groupe) }}</td>
                   <td>{{ item.date }}</td>
                 </tr>
               </tbody>
@@ -205,7 +200,7 @@
             </table>
           </div>
 
-          <div class="AjoutTrans" v-if="caisseSelectionnee?.id === 'offrandes'">
+          <div class="AjoutTrans" v-if="canManageFinance && caisseSelectionnee?.id === 'offrandes'">
             <form @submit.prevent="ajouterPaiement">
               <h4>Ajouter un paiement</h4>
               <input type="text" v-model="newPaiement.nom" placeholder="nom et prénom" />
@@ -223,7 +218,7 @@
             </form>
           </div>
 
-          <div class="AjoutTrans" v-else>
+          <div class="AjoutTrans" v-else-if="canManageFinance">
             <form @submit.prevent="ajouterAutreCaisse">
               <h4>Ajouter une entrée</h4>
               <input type="text" v-model="newAutreCaisse.nom" placeholder="Nom" />
@@ -245,6 +240,8 @@ import { computed, onMounted } from 'vue'
 import { useGetData } from '@/composable/useGetData.js'
 import { useFinance } from '@/composable/useFinance.js'
 import { formatCurrency, getGroupeLabel, membreGroupOptions } from '@/data/financeData.js'
+import { useAuthStore } from '@/stores/auth'
+import { hasPermission } from '@/utils/permissions'
 
 const { isLoading, getData } = useGetData()
 const {
@@ -272,6 +269,9 @@ const {
   autresCaissesFiltres,
   totalAutresCaisses,
 } = useFinance()
+
+const { currentRole } = useAuthStore()
+const canManageFinance = computed(() => hasPermission(currentRole.value, 'finance', 'canManage'))
 
 const groupeOptions = computed(() => membreGroupOptions)
 const groupeFormOptions = computed(() =>

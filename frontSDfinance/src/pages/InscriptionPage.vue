@@ -32,14 +32,23 @@
           <input type="text" id="telephone" v-model="form.telephone" />
         </div>
         <div class="groupe">
-          <label for="groupe">Groupe</label>
-          <select id="groupe" name="groupe" v-model="form.groupe">
-            <option value="groupe_jeunes">Jeune</option>
-            <option value="groupe_femmes">Femme</option>
-            <option value="groupe_hommes">Homme</option>
-            <option value="groupe_hommes">Leader</option>
-          </select>
-        </div>
+        <label for="groupe">Groupe</label>
+        <select id="groupe" name="groupe" v-model="form.groupe">
+          <option value="groupe_jeunes">Jeune</option>
+          <option value="groupe_femmes">Femme</option>
+          <option value="groupe_hommes">Homme</option>
+          <option value="groupe_hommes">Leader</option>
+        </select>
+      </div>
+      <div class="role">
+        <label for="role">Rôle</label>
+        <select id="role" name="role" v-model="form.role">
+          <option value="MEMBRE">Simple Membre</option>
+          <option value="PRESIDENT">Président</option>
+          <option value="TRESORIER_CAISSIER">Trésorier/Caissier</option>
+          <option value="LEADER">Leader</option>
+        </select>
+      </div>
         <div class="date-adhesion">
           <label for="dateAdhesion">Date d'adhésion</label>
           <input type="date" id="dateAdhesion" v-model="form.dateAdhesion" />
@@ -74,6 +83,7 @@ const form = reactive({
   password: '',
   telephone: '',
   groupe: 'groupe_jeunes',
+  role: 'MEMBRE',
   dateAdhesion: '',
   sexe: '',
 })

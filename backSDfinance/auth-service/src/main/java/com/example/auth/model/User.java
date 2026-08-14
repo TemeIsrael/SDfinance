@@ -9,8 +9,10 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 
 @Data
@@ -71,4 +73,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_groupes", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "groupe_id")
+    private List<Long> groupeIds = new ArrayList<>();
 }

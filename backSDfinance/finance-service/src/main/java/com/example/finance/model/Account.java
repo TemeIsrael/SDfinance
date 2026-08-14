@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "accounts")
+@Table(name = "accounts", indexes = {
+        @Index(name = "idx_account_groupe", columnList = "groupe_id")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -30,4 +32,7 @@ public class Account {
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> transactions = new ArrayList<>();
+
+    @Column(name = "groupe_id")
+    private Long groupeId;
 }

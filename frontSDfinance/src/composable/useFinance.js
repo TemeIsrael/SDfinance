@@ -7,8 +7,11 @@ import {
   initialTransactions,
   paiementFilters,
 } from '@/data/financeData.js'
+import { useAuthStore } from '@/stores/auth'
 
 export const useFinance = () => {
+  const { activeGroupeId } = useAuthStore()
+  
   const transactions = ref([...initialTransactions])
   const caisses = ref([...initialCaisses])
   const paiements = ref([...initialPaiements])
@@ -53,9 +56,11 @@ export const useFinance = () => {
   }
 
   const ajouterMembreCaisse = () => {
-    if (!newMembreCaisse.value.nom || !newMembreCaisse.value.groupe) return
+    if (!newMembreCaisse.value.nom) return
+    const groupeId = activeGroupeId.value || '1'
     membresCaisse.value.push({
       ...newMembreCaisse.value,
+      groupe: groupeId,
       id: membresCaisse.value.length + 1,
       date: new Date().toLocaleDateString('fr-FR'),
     })

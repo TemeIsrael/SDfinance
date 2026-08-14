@@ -20,4 +20,5 @@ public class MemberDto {
     private String telephone;
     private String email;
     private String adresse;
+    private Long groupeId;
 }

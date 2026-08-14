@@ -8,9 +8,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -22,7 +27,7 @@ public class UserService {
     }
 
     @Transactional
-    public User register(String username, String rawPassword, UserRole role) {
+    public User register(String username, String rawPassword, UserRole role, List<Long> groupeIds) {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
@@ -31,6 +36,7 @@ public class UserService {
                 .passwordHash(passwordEncoder.encode(rawPassword))
                 .role(role)
                 .enabled(true)
+                .groupeIds(groupeIds != null ? groupeIds : new ArrayList<>())
                 .build();
         return userRepository.save(user);
     }
@@ -38,5 +44,11 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
 }

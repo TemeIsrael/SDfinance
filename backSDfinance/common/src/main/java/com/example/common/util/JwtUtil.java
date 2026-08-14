@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 
+import java.util.List;
+
 /**
  * Shared JWT utility used by all micro‑services.
  */
@@ -24,12 +26,13 @@ public class JwtUtil {
         this.jwtExpirationMs = Long.parseLong(env.getProperty("jwt.expirationMs", "86400000")); // 24h default
     }
 
-    public String generateToken(String username, String role) {
+    public String generateToken(String username, String role, List<Long> groupeIds) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtExpirationMs);
         return Jwts.builder()
                 .setSubject(username)
                 .claim("role", role)
+                .claim("groupeIds", groupeIds)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -37,12 +40,21 @@ public class JwtUtil {
     }
 
     public String getUsernameFromToken(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Long> getGroupeIdsFromToken(String token) {
+        Claims claims = getClaims(token);
+        return claims.get("groupeIds", List.class);
+    }
+    
+    private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
     }
 
     public boolean validateToken(String token) {

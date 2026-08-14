@@ -5,7 +5,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+        @Index(name = "idx_event_groupe", columnList = "groupe_id")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -23,4 +25,7 @@ public class Event {
 
     private LocalDateTime startDate;
     private String location;
+
+    @Column(name = "groupe_id")
+    private Long groupeId;
 }

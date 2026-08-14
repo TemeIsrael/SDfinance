@@ -13,4 +13,5 @@ public class AccountDto {
     private String ownerUsername;
     private BigDecimal balance;
     private int transactionCount;
+    private Long groupeId;
 }

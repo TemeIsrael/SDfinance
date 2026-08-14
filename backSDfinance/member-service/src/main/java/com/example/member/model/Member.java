@@ -5,14 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.example.common.model.UserRole; // optional if needed later
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "members")
+@Table(name = "members", indexes = {
+        @Index(name = "idx_member_groupe", columnList = "groupe_id")
+})
 public class Member {
 
     @Id
@@ -36,4 +37,8 @@ public class Member {
     private String telephone;
     private String email;
     private String adresse;
+
+    /** Clé étrangère vers le groupe : filtrage RBAC */
+    @Column(name = "groupe_id")
+    private Long groupeId;
 }

@@ -9,12 +9,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class JwtAuthenticationFilter extends org.springframework.web.filter.OncePerRequestFilter {
@@ -33,10 +35,17 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
         String token = getJwtFromRequest(request);
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             String username = jwtUtil.getUsernameFromToken(token);
+            List<Long> groupeIds = jwtUtil.getGroupeIdsFromToken(token);
+
             UserDetails userDetails = userService.findByUsername(username);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            // Store groupeIds in details map so SecurityContextHelper can access them
+            Map<String, Object> details = new HashMap<>();
+            details.put("groupeIds", groupeIds != null ? groupeIds : List.of());
+            authentication.setDetails(details);
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
         filterChain.doFilter(request, response);

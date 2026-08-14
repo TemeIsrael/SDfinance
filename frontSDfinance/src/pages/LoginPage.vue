@@ -1,5 +1,4 @@
 <template>
-  <!-- Page de connexion (style connexion.html) -->
   <div class="page-auth">
     <header>
       <h1>SDfinance</h1>
@@ -9,25 +8,33 @@
     <form class="card" @submit.prevent="seConnecter">
       <h2>Connexion</h2>
 
-      <label for="nom">Nom</label>
-      <input type="text" id="nom" v-model="form.nom" placeholder="Votre nom" />
-
-      <label for="prenom">Prénom</label>
-      <input type="text" id="prenom" v-model="form.prenom" placeholder="Votre prénom" />
+      <label for="username">Nom d'utilisateur</label>
+      <input type="text" id="username" v-model="form.username" placeholder="admin, president, tresorier..." required />
 
       <label for="password">Mot de passe</label>
-      <input type="password" id="password" v-model="form.password" placeholder="••••••••" />
+      <input type="password" id="password" v-model="form.password" placeholder="••••••••" required />
 
-      <label for="groupe">Groupe</label>
-      <select id="groupe" name="groupe" v-model="form.groupe">
+      <label for="groupe">Groupe (Simulation ou réel)</label>
+      <select id="groupe" v-model="form.groupe">
         <option value="">-- Sélectionnez un groupe --</option>
-        <option value="groupe_jeunes">Jeune</option>
-        <option value="groupe_femmes">Femme</option>
-        <option value="groupe_hommes">Homme</option>
-        <option value="groupe_leaders">Leader</option>
+        <option value="1">Jeune</option>
+        <option value="2">Femme</option>
+        <option value="3">Homme</option>
+      </select>
+
+      <!-- Sélecteur de rôle pour simuler la connexion si le backend n'est pas lancé -->
+      <label for="mockRole">Rôle</label>
+      <select id="mockRole" v-model="form.mockRole">
+        <option value="MEMBRE">Simple Membre</option>
+        <option value="PRESIDENT">Président</option>
+        <option value="TRESORIER_CAISSIER">Trésorier/Caissier</option>
+        <option value="LEADER">Leader</option>
+        <option value="ADMIN">Admin</option>
       </select>
 
       <button type="submit">Se connecter</button>
+
+      <p class="error-msg" v-if="error">{{ error }}</p>
 
       <p class="lien-inscription">
         Pas encore inscrit ?
@@ -38,20 +45,60 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const { login } = useAuthStore()
 
 const form = reactive({
-  nom: '',
-  prenom: '',
+  username: '',
   password: '',
   groupe: '',
+  mockRole: 'MEMBRE',
 })
 
-const seConnecter = () => {
-  router.replace({ name: 'membres' })
+const error = ref('')
+
+const seConnecter = async () => {
+  error.value = ''
+  try {
+    // Tenter une vraie connexion si le backend est disponible
+    const response = await fetch('http://localhost:8080/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: form.username, password: form.password, groupe: form.groupe })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      login({ username: data.username, role: data.role, groupeIds: data.groupeIds }, data.token)
+    } else {
+      throw new Error("Echec connexion")
+    }
+  } catch (err) {
+    console.warn("Backend indisponible, utilisation des données simulées", err)
+    
+    // Simulation pour pouvoir tester l'UI sans backend
+    const mockGroupeIds = form.mockRole === 'LEADER' || form.mockRole === 'ADMIN' ? [] : (form.groupe ? [form.groupe] : [1])
+    
+    login({ 
+      username: form.username || 'TestUser', 
+      role: form.mockRole, 
+      groupeIds: mockGroupeIds 
+    }, 'fake-jwt-token')
+  }
+
+  // Redirection basée sur le rôle
+  if (form.mockRole === 'ADMIN') {
+    router.replace({ name: 'admin-users' })
+  } else if (form.mockRole === 'MEMBRE' || form.mockRole === 'TRESORIER_CAISSIER') {
+    router.replace({ name: 'transactions' })
+  } else {
+    // PRESIDENT ou LEADER
+    router.replace({ name: 'membres' })
+  }
 }
 </script>
 
@@ -129,6 +176,13 @@ button {
 button:hover {
   background: var(--primary-dark);
   transform: scale(1.03);
+}
+
+.error-msg {
+  color: red;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 0.9rem;
 }
 
 .lien-inscription {

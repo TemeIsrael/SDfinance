@@ -6,7 +6,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "transactions", indexes = {
+        @Index(name = "idx_transaction_groupe", columnList = "groupe_id"),
+        @Index(name = "idx_transaction_groupe_type", columnList = "groupe_id, type")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -34,5 +37,8 @@ public class Transaction {
     @Column(length = 512)
     private String description;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "groupe_id")
+    private Long groupeId;
 }

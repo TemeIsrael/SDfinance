@@ -1,10 +1,11 @@
 <template>
   <main class="container">
     <div>
-      <h2>Liste de la caisse de fonctionnement</h2>
+      <h2>Liste des membres</h2>
     </div>
 
-    <div class="menu">
+    <!-- Filtre par groupe : visible uniquement pour le LEADER (vue globale) -->
+    <div class="menu" v-if="currentRole === 'LEADER'">
       <label class="field-label" for="filtre-groupe">
         Filtrer par groupe
         <select id="filtre-groupe" v-model="membreFiltre">
@@ -43,19 +44,29 @@
       </tfoot>
     </table>
 
-    <form id="form-membre" @submit.prevent="ajouterMembreCaisse">
+    <!-- Formulaire LEADER : ajouter uniquement des enfants -->
+    <form v-if="currentRole === 'LEADER'" id="form-membre" @submit.prevent="ajouterEnfant">
+      <p class="form-hint">Ajouter un enfant</p>
+      <input
+        type="text"
+        id="nomEnfant"
+        v-model="newEnfant.nom"
+        placeholder="Nom et Prénom de l'enfant"
+      />
+      <div class="pourAjout">
+        <button class="btn" type="submit">Ajouter</button>
+      </div>
+    </form>
+
+    <!-- Formulaire PRESIDENT : ajouter un membre de son groupe -->
+    <form v-else-if="currentRole === 'PRESIDENT'" id="form-membre" @submit.prevent="ajouterMembreCaisse">
+      <p class="form-hint">Ajouter un membre</p>
       <input
         type="text"
         id="nomEtPrenom"
         v-model="newMembreCaisse.nom"
         placeholder="Nom et Prénom"
       />
-      <select id="groupeMembre" v-model="newMembreCaisse.groupe">
-        <option value="">-- Sélectionnez un groupe --</option>
-        <option v-for="option in groupeFormOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
       <div class="pourAjout">
         <button class="btn" id="soumission" type="submit">Ajouter</button>
       </div>
@@ -64,24 +75,43 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useGetData } from '@/composable/useGetData.js'
 import { useFinance } from '@/composable/useFinance.js'
 import { getGroupeLabel, membreGroupOptions } from '@/data/financeData.js'
+import { useAuthStore } from '@/stores/auth'
 
 const { isLoading, getData } = useGetData()
-const { membreFiltre, newMembreCaisse, ajouterMembreCaisse, membresFiltres, totalMembres } =
+const { membreFiltre, newMembreCaisse, ajouterMembreCaisse, membresCaisse, membresFiltres, totalMembres } =
   useFinance()
 
+const { currentRole } = useAuthStore()
+
 const groupeOptions = computed(() => membreGroupOptions)
-const groupeFormOptions = computed(() =>
-  membreGroupOptions.filter((option) => option.value !== 'tous'),
-)
+
+// Formulaire dédié aux enfants (groupe LEADER uniquement)
+const newEnfant = ref({ nom: '' })
+const ajouterEnfant = () => {
+  if (!newEnfant.value.nom) return
+  membresCaisse.value.push({
+    id: membresCaisse.value.length + 1,
+    nom: newEnfant.value.nom,
+    groupe: 'enfants',
+    date: new Date().toLocaleDateString('fr-FR'),
+  })
+  newEnfant.value = { nom: '' }
+}
 
 onMounted(() => getData('membres'))
 </script>
 
 <style scoped>
+.form-hint {
+  color: white;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
 .container {
   margin-top: 10px;
   padding: 14px;

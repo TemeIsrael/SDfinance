@@ -13,4 +13,5 @@ public class EventDto {
     private String description;
     private LocalDateTime startDate;
     private String location;
+    private Long groupeId;
 }
