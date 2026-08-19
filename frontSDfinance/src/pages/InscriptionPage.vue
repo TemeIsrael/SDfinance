@@ -34,10 +34,9 @@
         <div class="groupe">
         <label for="groupe">Groupe</label>
         <select id="groupe" name="groupe" v-model="form.groupe">
-          <option value="groupe_jeunes">Jeune</option>
-          <option value="groupe_femmes">Femme</option>
-          <option value="groupe_hommes">Homme</option>
-          <option value="groupe_hommes">Leader</option>
+          <option value="1">Jeune</option>
+          <option value="2">Femme</option>
+          <option value="3">Homme</option>
         </select>
       </div>
       <div class="role">
@@ -82,14 +81,46 @@ const form = reactive({
   email: '',
   password: '',
   telephone: '',
-  groupe: 'groupe_jeunes',
+  groupe: '1',
   role: 'MEMBRE',
   dateAdhesion: '',
   sexe: '',
 })
 
-const sInscrire = () => {
-  router.push('/connexion')
+const sInscrire = async () => {
+  try {
+    const generatedUsername = `${form.prenom.trim()} ${form.nom.trim()}`
+    const groupeIds = form.role === 'LEADER' ? [] : [parseInt(form.groupe)]
+
+    // Envoi réel vers le backend (aucun mock)
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: generatedUsername, // concaténation Prénom + Nom
+        password: form.password,
+        role: form.role, // enum UserRole attendu
+        groupeIds: groupeIds // tableau d'IDs de groupe
+      })
+    })
+
+    if (response.ok) {
+      router.push({
+        path: '/connexion',
+        query: { username: generatedUsername }
+      })
+    } else {
+      let errorMsg = "Échec de l'enregistrement"
+      try {
+        const errorData = await response.json()
+        errorMsg = errorData.message || errorMsg
+      } catch (e) {}
+      alert("Erreur lors de l'inscription : " + errorMsg)
+    }
+  } catch (err) {
+    console.error("Erreur d'inscription", err)
+    alert("Impossible de contacter le serveur d'authentification.")
+  }
 }
 </script>
 

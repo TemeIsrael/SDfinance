@@ -1,16 +1,14 @@
-package com.example.auth.filter;
+package com.example.common.filter;
 
-import com.example.auth.service.UserService;
 import com.example.common.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -18,15 +16,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Component("authJwtAuthenticationFilter")
+/**
+ * Filtre JWT partagé par tous les microservices.
+ * Extrait le token JWT du header Authorization, le valide,
+ * et crée un contexte de sécurité Spring Security.
+ */
+@Component
 public class JwtAuthenticationFilter extends org.springframework.web.filter.OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserService userService;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, @Lazy UserService userService) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userService = userService;
     }
 
     @Override
@@ -35,11 +36,13 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
         String token = getJwtFromRequest(request);
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
             String username = jwtUtil.getUsernameFromToken(token);
+            String role = jwtUtil.getRoleFromToken(token);
             List<Long> groupeIds = jwtUtil.getGroupeIdsFromToken(token);
 
-            UserDetails userDetails = userService.findByUsername(username);
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
+                    username, null, authorities);
 
             // Store groupeIds in details map so SecurityContextHelper can access them
             Map<String, Object> details = new HashMap<>();

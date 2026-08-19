@@ -117,7 +117,8 @@ router.beforeEach((to, from, next) => {
       const canAccess = hasPermission(role, to.meta.module, 'canView') || 
                         hasPermission(role, to.meta.module, 'canViewGlobal') ||
                         hasPermission(role, to.meta.module, 'canManage') ||
-                        hasPermission(role, to.meta.module, 'canUse');
+                        hasPermission(role, to.meta.module, 'canUse') ||
+                        hasPermission(role, to.meta.module, 'canViewPersonal');
                         
       if (!canAccess) {
         // Rediriger vers une route par défaut si pas accès

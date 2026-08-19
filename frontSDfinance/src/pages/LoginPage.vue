@@ -9,27 +9,16 @@
       <h2>Connexion</h2>
 
       <label for="username">Nom d'utilisateur</label>
-      <input type="text" id="username" v-model="form.username" placeholder="admin, president, tresorier..." required />
+      <input type="text" id="username" v-model="form.username" placeholder="prenom nom" required />
 
       <label for="password">Mot de passe</label>
       <input type="password" id="password" v-model="form.password" placeholder="••••••••" required />
 
-      <label for="groupe">Groupe (Simulation ou réel)</label>
+      <label for="groupe">Groupe</label>
       <select id="groupe" v-model="form.groupe">
-        <option value="">-- Sélectionnez un groupe --</option>
         <option value="1">Jeune</option>
         <option value="2">Femme</option>
         <option value="3">Homme</option>
-      </select>
-
-      <!-- Sélecteur de rôle pour simuler la connexion si le backend n'est pas lancé -->
-      <label for="mockRole">Rôle</label>
-      <select id="mockRole" v-model="form.mockRole">
-        <option value="MEMBRE">Simple Membre</option>
-        <option value="PRESIDENT">Président</option>
-        <option value="TRESORIER_CAISSIER">Trésorier/Caissier</option>
-        <option value="LEADER">Leader</option>
-        <option value="ADMIN">Admin</option>
       </select>
 
       <button type="submit">Se connecter</button>
@@ -46,59 +35,50 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const { login } = useAuthStore()
 
 const form = reactive({
-  username: '',
+  username: route.query.username || '',
   password: '',
   groupe: '',
-  mockRole: 'MEMBRE',
 })
 
 const error = ref('')
 
 const seConnecter = async () => {
   error.value = ''
-  try {
-    // Tenter une vraie connexion si le backend est disponible
-    const response = await fetch('http://localhost:8080/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: form.username, password: form.password, groupe: form.groupe })
-    })
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: form.username, password: form.password, groupe: form.groupe })
+      })
 
-    if (response.ok) {
-      const data = await response.json()
-      login({ username: data.username, role: data.role, groupeIds: data.groupeIds }, data.token)
-    } else {
-      throw new Error("Echec connexion")
+      if (response.ok) {
+        const data = await response.json()
+        login({ username: data.username, role: data.role, groupeIds: data.groupeIds }, data.token)
+        // Redirection selon le rôle réel retourné
+        if (data.role === 'ADMIN') {
+          router.replace({ name: 'admin-users' })
+        } else if (data.role === 'MEMBRE' || data.role === 'TRESORIER_CAISSIER') {
+          router.replace({ name: 'transactions' })
+        } else {
+          router.replace({ name: 'membres' })
+        }
+      } else {
+        const errData = await response.json().catch(() => ({}))
+        const msg = errData.message || 'Échec de la connexion'
+        alert(msg)
+      }
+    } catch (err) {
+      console.error('Erreur lors de la connexion', err)
+      alert('Impossible de contacter le serveur d\'authentification.')
     }
-  } catch (err) {
-    console.warn("Backend indisponible, utilisation des données simulées", err)
-    
-    // Simulation pour pouvoir tester l'UI sans backend
-    const mockGroupeIds = form.mockRole === 'LEADER' || form.mockRole === 'ADMIN' ? [] : (form.groupe ? [form.groupe] : [1])
-    
-    login({ 
-      username: form.username || 'TestUser', 
-      role: form.mockRole, 
-      groupeIds: mockGroupeIds 
-    }, 'fake-jwt-token')
-  }
-
-  // Redirection basée sur le rôle
-  if (form.mockRole === 'ADMIN') {
-    router.replace({ name: 'admin-users' })
-  } else if (form.mockRole === 'MEMBRE' || form.mockRole === 'TRESORIER_CAISSIER') {
-    router.replace({ name: 'transactions' })
-  } else {
-    // PRESIDENT ou LEADER
-    router.replace({ name: 'membres' })
-  }
 }
 </script>
 

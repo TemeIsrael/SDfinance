@@ -37,11 +37,6 @@
       <artifactId>lombok</artifactId>
       <version>1.18.32</version>
     </dependency>
-    <dependency>
-      <groupId>com.example</groupId>
-      <artifactId>auth-service</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
   <build>
     <plugins>

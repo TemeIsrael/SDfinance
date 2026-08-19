@@ -43,6 +43,10 @@ public class JwtUtil {
         return getClaims(token).getSubject();
     }
 
+    public String getRoleFromToken(String token) {
+        return getClaims(token).get("role", String.class);
+    }
+
     @SuppressWarnings("unchecked")
     public List<Long> getGroupeIdsFromToken(String token) {
         Claims claims = getClaims(token);

@@ -1,6 +1,6 @@
 package com.example.member.config;
 
-import com.example.auth.filter.JwtAuthenticationFilter;
+import com.example.common.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
