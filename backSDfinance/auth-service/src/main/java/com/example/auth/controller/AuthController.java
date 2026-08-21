@@ -39,17 +39,25 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
-        User user = (User) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getGroupeIds());
-        return ResponseEntity.ok(AuthResponse.builder()
-                .token(token)
-                .username(user.getUsername())
-                .role(user.getRole().name())
-                .groupeIds(user.getGroupeIds())
-                .build());
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+            User user = (User) authentication.getPrincipal();
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getGroupeIds());
+            return ResponseEntity.ok(AuthResponse.builder()
+                    .token(token)
+                    .username(user.getUsername())
+                    .role(user.getRole().name())
+                    .groupeIds(user.getGroupeIds())
+                    .build());
+        } catch (org.springframework.security.authentication.InternalAuthenticationServiceException e) {
+            return ResponseEntity.status(401).body(java.util.Map.of("message", "L'utilisateur n'existe pas en base de données."));
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            return ResponseEntity.status(401).body(java.util.Map.of("message", "Mot de passe incorrect."));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(java.util.Map.of("message", "Échec de l'authentification."));
+        }
     }
 }
