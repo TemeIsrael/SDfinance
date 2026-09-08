@@ -50,7 +50,14 @@ public class JwtUtil {
     @SuppressWarnings("unchecked")
     public List<Long> getGroupeIdsFromToken(String token) {
         Claims claims = getClaims(token);
-        return claims.get("groupeIds", List.class);
+        Object rawGroupeIds = claims.get("groupeIds");
+        if (rawGroupeIds instanceof List<?>) {
+            return ((List<?>) rawGroupeIds).stream()
+                    .filter(java.util.Objects::nonNull)
+                    .map(item -> ((Number) item).longValue())
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        return java.util.Collections.emptyList();
     }
     
     private Claims getClaims(String token) {

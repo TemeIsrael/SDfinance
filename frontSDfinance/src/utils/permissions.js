@@ -4,6 +4,7 @@ export const ROLES = {
   PRESIDENT: 'PRESIDENT',
   TRESORIER_CAISSIER: 'TRESORIER_CAISSIER',
   MEMBRE: 'MEMBRE',
+  COLLABORATOR: 'COLLABORATOR',
 };
 
 // Matrice des permissions UI
@@ -12,13 +13,13 @@ export const PERMISSIONS = {
     canManage: [ROLES.ADMIN],
   },
   members: {
-    canView: [ROLES.PRESIDENT, ROLES.LEADER],
-    canManage: [ROLES.PRESIDENT],
+    canView: [ROLES.PRESIDENT, ROLES.LEADER, ROLES.COLLABORATOR],
+    canManage: [ROLES.PRESIDENT, ROLES.COLLABORATOR], // collaborators can add enfants
   },
   finance: {
-    canView: [ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.LEADER],
+    canView: [ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.LEADER, ROLES.COLLABORATOR],
     canViewPersonal: [ROLES.MEMBRE],
-    canManage: [ROLES.TRESORIER_CAISSIER],
+    canManage: [ROLES.COLLABORATOR], // only collaborators can edit the church caisse
   },
   events: {
     canView: [ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.LEADER], // Tresorier pour la finance liée
@@ -26,9 +27,12 @@ export const PERMISSIONS = {
   },
   messaging: {
     // Tous ont accès à leur propre messagerie pour communiquer avec les autres
-    canUse: [ROLES.ADMIN, ROLES.LEADER, ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.MEMBRE],
+    canUse: [ROLES.ADMIN, ROLES.LEADER, ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.MEMBRE, ROLES.COLLABORATOR],
   }
 };
+
+// Duplicate PERMISSIONS block removed – consolidated permissions are defined above.
+
 
 /**
  * Vérifie si le rôle de l'utilisateur l'autorise à effectuer une action donnée

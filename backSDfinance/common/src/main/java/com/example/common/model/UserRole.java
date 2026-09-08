@@ -5,7 +5,8 @@ public enum UserRole {
     LEADER,
     PRESIDENT,
     TRESORIER_CAISSIER,
-    MEMBRE;
+    MEMBRE,
+    COLLABORATOR;
 
     public boolean isGlobalScope() {
         return this == LEADER;

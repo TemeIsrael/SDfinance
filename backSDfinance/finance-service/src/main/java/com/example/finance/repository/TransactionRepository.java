@@ -16,9 +16,9 @@ public interface TransactionRepository extends GroupScopedRepository<Transaction
      */
     @Query("SELECT new com.example.finance.dto.FinanceSummaryDto(" +
            "t.groupeId, " +
-           "SUM(CASE WHEN t.type = com.example.finance.model.Transaction.Type.CREDIT THEN t.amount ELSE 0 END), " +
-           "SUM(CASE WHEN t.type = com.example.finance.model.Transaction.Type.DEBIT THEN t.amount ELSE 0 END), " +
-           "SUM(CASE WHEN t.type = com.example.finance.model.Transaction.Type.CREDIT THEN t.amount ELSE -t.amount END)) " +
+           "SUM(CASE WHEN t.type = com.example.finance.model.Transaction$Type.CREDIT THEN t.amount ELSE 0 END), " +
+           "SUM(CASE WHEN t.type = com.example.finance.model.Transaction$Type.DEBIT THEN t.amount ELSE 0 END), " +
+           "SUM(CASE WHEN t.type = com.example.finance.model.Transaction$Type.CREDIT THEN t.amount ELSE -t.amount END)) " +
            "FROM Transaction t GROUP BY t.groupeId")
     List<com.example.finance.dto.FinanceSummaryDto> getFinanceSummaryByGroupe();
 

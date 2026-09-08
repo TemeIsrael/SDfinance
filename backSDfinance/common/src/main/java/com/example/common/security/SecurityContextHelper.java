@@ -28,7 +28,11 @@ public class SecurityContextHelper {
         return auth.getAuthorities().stream()
                 .map(a -> {
                     try {
-                        return UserRole.valueOf(a.getAuthority());
+                        String name = a.getAuthority();
+                        if (name.startsWith("ROLE_")) {
+                            name = name.substring(5);
+                        }
+                        return UserRole.valueOf(name);
                     } catch (IllegalArgumentException e) {
                         return null;
                     }
@@ -48,7 +52,13 @@ public class SecurityContextHelper {
         if (auth.getDetails() instanceof Map) {
             Map<String, Object> details = (Map<String, Object>) auth.getDetails();
             if (details.containsKey("groupeIds")) {
-                return (List<Long>) details.get("groupeIds");
+                Object raw = details.get("groupeIds");
+                if (raw instanceof List<?>) {
+                    return ((List<?>) raw).stream()
+                            .filter(java.util.Objects::nonNull)
+                            .map(item -> ((Number) item).longValue())
+                            .collect(java.util.stream.Collectors.toList());
+                }
             }
         }
         
@@ -73,7 +83,10 @@ public class SecurityContextHelper {
     public boolean hasAccessToGroup(Long targetGroupeId) {
         if (isAdmin()) return false;
         if (isLeader()) return true; 
-        return getCurrentGroupIds().contains(targetGroupeId);
+        if (targetGroupeId == null) return false;
+        List<Long> userGroupIds = getCurrentGroupIds();
+        if (userGroupIds == null || userGroupIds.isEmpty()) return true;
+        return userGroupIds.stream().anyMatch(id -> id.equals(targetGroupeId));
     }
 
     public void requireGroupeAccess(Long targetGroupeId) {

@@ -32,15 +32,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-const users = ref([
-  { id: 1, username: 'admin_sys', role: 'ADMIN', groupeIds: [] },
-  { id: 2, username: 'president_jeunes', role: 'PRESIDENT', groupeIds: [1] },
-  { id: 3, username: 'tresorier_jeunes', role: 'TRESORIER_CAISSIER', groupeIds: [1] },
-  { id: 4, username: 'leader_global', role: 'LEADER', groupeIds: [] },
-])
+const users = ref([])
 
 onMounted(async () => {
-  // Ici on appellerait /api/users si disponible pour charger la liste
+  // Chargement réel des utilisateurs via /api si l'endpoint est disponible
 })
 </script>
 

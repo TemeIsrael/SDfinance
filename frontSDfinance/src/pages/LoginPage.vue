@@ -12,13 +12,19 @@
       <input type="text" id="username" v-model="form.username" placeholder="prenom nom" required />
 
       <label for="password">Mot de passe</label>
-      <input type="password" id="password" v-model="form.password" placeholder="••••••••" required />
+      <div style="position: relative;">
+        <input :type="showPassword ? 'text' : 'password'" id="password" v-model="form.password" placeholder="••••••••" required style="width: 100%; box-sizing: border-box;" />
+        <span @click="showPassword = !showPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2em;">
+          {{ showPassword ? '👁️' : '🙈' }}
+        </span>
+      </div>
 
       <label for="groupe">Groupe</label>
       <select id="groupe" v-model="form.groupe">
         <option value="1">Jeune</option>
         <option value="2">Femme</option>
         <option value="3">Homme</option>
+        <option value="4">Aucun</option>
       </select>
 
       <button type="submit">Se connecter</button>
@@ -49,6 +55,7 @@ const form = reactive({
 })
 
 const error = ref('')
+const showPassword = ref(false)
 
 const seConnecter = async () => {
   error.value = ''
@@ -61,6 +68,13 @@ const seConnecter = async () => {
 
       if (response.ok) {
         const data = await response.json()
+        if (form.groupe && form.groupe !== '4' && data.groupeIds && data.groupeIds.length > 0) {
+          const selectedGid = Number(form.groupe)
+          if (!data.groupeIds.includes(selectedGid)) {
+            error.value = "Ce compte n'appartient pas au groupe sélectionné. Veuillez choisir votre groupe d'origine."
+            return
+          }
+        }
         login({ username: data.username, role: data.role, groupeIds: data.groupeIds }, data.token)
         // Redirection selon le rôle réel retourné
         if (data.role === 'ADMIN') {
@@ -73,11 +87,11 @@ const seConnecter = async () => {
       } else {
         const errData = await response.json().catch(() => ({}))
         const msg = errData.message || 'Échec de la connexion'
-        alert(msg)
+        error.value = msg
       }
     } catch (err) {
       console.error('Erreur lors de la connexion', err)
-      alert('Impossible de contacter le serveur d\'authentification.')
+      error.value = 'Impossible de contacter le serveur d\'authentification.'
     }
 }
 </script>

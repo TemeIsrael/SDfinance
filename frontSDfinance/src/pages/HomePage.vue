@@ -29,7 +29,7 @@ import backgroundImage from '@/images/arrièrePlan.jpeg'
     >
       <div class="hero-content">
         <h1>Gestion financière</h1>
-        <p>Gestion simple et transparente de nos opérations financières</p>
+        <p>Pour un gestion simple et transparente de nos opérations financières</p>
         <div class="hero-actions">
           <RouterLink :to="{ name: 'connexion' }" class="btn-hero">Se connecter</RouterLink>
           <RouterLink :to="{ name: 'inscription' }" class="btn-hero">S'inscrire</RouterLink>

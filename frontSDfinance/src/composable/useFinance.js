@@ -10,22 +10,30 @@ import {
 import { useAuthStore } from '@/stores/auth'
 
 export const useFinance = () => {
-  const { activeGroupeId } = useAuthStore()
+  const { activeGroupeId, currentRole, currentUser, userGroups } = useAuthStore()
   
   const transactions = ref([...initialTransactions])
-  const caisses = ref([...initialCaisses])
+  const caisses = computed(() => {
+    // Hide the church caisse ('offrandes') for presidents and trésoriers.
+    if (['PRESIDENT', 'TRESORIER_CAISSIER'].includes(currentRole.value)) {
+      return initialCaisses.filter(c => c.id !== 'offrandes');
+    }
+    // All other roles (MEMBRE, LEADER, COLLABORATOR, etc.) see all caisses.
+    return initialCaisses;
+  })
   const paiements = ref([...initialPaiements])
   const membresCaisse = ref([...initialMembresCaisse])
   const autresCaisses = ref([...initialAutresCaisses])
   const caisseSelectionnee = ref(null)
+  const caisseId = computed(() => caisseSelectionnee.value?.id)
   const filtreActif = ref('dime')
   const membreFiltre = ref('tous')
   const anneeFiltre = ref('')
 
   const newTrans = ref({ description: '', montant: '', motif: '', date: '' })
-  const newPaiement = ref({ nom: '', montant: '', date: '', type: 'dime' })
+  const newPaiement = ref({ nom: '', groupe: '', montant: '', date: '', type: 'dime' })
   const newMembreCaisse = ref({ nom: '', groupe: '' })
-  const newAutreCaisse = ref({ nom: '', montant: '', date: '' })
+  const newAutreCaisse = ref({ nom: '', groupe: '', montant: '', date: '' })
 
   const totalEntrees = computed(() =>
     transactions.value
@@ -52,19 +60,77 @@ export const useFinance = () => {
   const ajouterPaiement = () => {
     if (!newPaiement.value.nom || !newPaiement.value.montant) return
     paiements.value.push({ ...newPaiement.value, id: Date.now() })
-    newPaiement.value = { nom: '', montant: '', date: '', type: 'dime' }
+    newPaiement.value = { nom: '', groupe: '', montant: '', date: '', type: 'dime' }
   }
 
-  const ajouterMembreCaisse = () => {
+  const fetchMembres = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    try {
+      const res = await fetch('/api/members', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        membresCaisse.value = data.map((m) => ({
+          id: m.id,
+          nom: `${m.nom} ${m.prenom}`.trim(),
+          groupe: String(m.groupeId),
+          date: new Date().toLocaleDateString('fr-FR'),
+        }))
+      }
+    } catch (err) {
+      console.error('Erreur chargement membres API:', err)
+    }
+  }
+
+  const ajouterMembreCaisse = async () => {
     if (!newMembreCaisse.value.nom) return
-    const groupeId = activeGroupeId.value || '1'
-    membresCaisse.value.push({
-      ...newMembreCaisse.value,
-      groupe: groupeId,
-      id: membresCaisse.value.length + 1,
-      date: new Date().toLocaleDateString('fr-FR'),
-    })
-    newMembreCaisse.value = { nom: '', groupe: '' }
+    const token = localStorage.getItem('token')
+    const groupeId = Number(activeGroupeId.value || userGroups.value?.[0] || 1)
+    const fullName = newMembreCaisse.value.nom.trim()
+    const spaceIndex = fullName.indexOf(' ')
+    const nom = spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName
+    const prenom = spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : '.'
+
+    try {
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nom,
+          prenom,
+          sexe: 'HOMME',
+          statut: 'ACTIF',
+          groupeId,
+        }),
+      })
+      if (res.ok) {
+        await fetchMembres()
+        newMembreCaisse.value = { nom: '', groupe: '' }
+      } else {
+        // Fallback local if backend fails or returns error
+        membresCaisse.value.push({
+          id: Date.now(),
+          nom: fullName,
+          groupe: String(groupeId),
+          date: new Date().toLocaleDateString('fr-FR'),
+        })
+        newMembreCaisse.value = { nom: '', groupe: '' }
+      }
+    } catch (err) {
+      console.error('Erreur ajout membre:', err)
+      membresCaisse.value.push({
+        id: Date.now(),
+        nom: fullName,
+        groupe: String(groupeId),
+        date: new Date().toLocaleDateString('fr-FR'),
+      })
+      newMembreCaisse.value = { nom: '', groupe: '' }
+    }
   }
 
   const paiementsFiltres = computed(() => {
@@ -72,25 +138,45 @@ export const useFinance = () => {
       return paiements.value
     }
 
-    if (!filtreActif.value) {
-      return paiements.value
+    let filtered = paiements.value
+
+    if (currentRole.value === 'MEMBRE') {
+        // MEMBRE sees only dimes and actions de grâce (offrande excluded)
+        filtered = filtered.filter(p => p.type !== 'offrande')
+      }
+
+    if (filtreActif.value && currentRole.value !== 'MEMBRE') {
+      filtered = filtered.filter((p) => p.type === filtreActif.value)
     }
 
-    return paiements.value.filter((p) => p.type === filtreActif.value)
+    return filtered
   })
 
   const membresFiltres = computed(() => {
-    if (membreFiltre.value === 'tous') {
-      return membresCaisse.value
+    let filtered = membresCaisse.value;
+    // Non-leader roles see only members of the active group
+    if (currentRole.value !== 'LEADER') {
+      const targetGroupeId = activeGroupeId.value || userGroups.value?.[0] || 1;
+      filtered = filtered.filter(m => String(m.groupe) === String(targetGroupeId));
+    } else {
+      // Leader can filter by selected group if not 'tous'
+      if (membreFiltre.value !== 'tous') {
+        filtered = filtered.filter(m => String(m.groupe) === String(membreFiltre.value));
+      }
     }
-
-    return membresCaisse.value.filter((m) => m.groupe === membreFiltre.value)
+    // Sort alphabetically by member name
+    return filtered.slice().sort((a, b) => a.nom.localeCompare(b.nom));
   })
 
   const totalMembres = computed(() => membresFiltres.value.length)
 
   const autresCaissesFiltres = computed(() => {
-    const items = autresCaisses.value.filter((item) => item.caisse === caisseSelectionnee.value?.id)
+    let items = autresCaisses.value.filter((item) => item.caisse === caisseSelectionnee.value?.id)
+
+    if (currentRole.value === 'MEMBRE') {
+      const username = currentUser.value?.username?.trim().toLowerCase()
+      items = items.filter(item => item.nom.trim().toLowerCase() === username)
+    }
 
     const normalizedYear = String(anneeFiltre.value || '').trim()
     const filteredItems = normalizedYear
@@ -130,13 +216,12 @@ export const useFinance = () => {
 
     const date = newAutreCaisse.value.date || new Date().toISOString().slice(0, 10)
     const formattedDate = date.split('-').reverse().join('/')
-    const caisseId = caisseSelectionnee.value?.id
 
-    if (caisseId === 'epargne') {
+    if (caisseId.value === 'epargne') {
       const existing = autresCaisses.value.find(
         (item) =>
-          item.caisse === caisseId &&
-          item.nom.toLowerCase() === newAutreCaisse.value.nom.trim().toLowerCase() &&
+          item.caisse === caisseId.value &&
+          item.nom.trim().toLowerCase() === newAutreCaisse.value.nom.trim().toLowerCase() &&
           item.date.endsWith(new Date(date).getFullYear().toString()),
       )
 
@@ -147,22 +232,24 @@ export const useFinance = () => {
         autresCaisses.value.push({
           id: Date.now(),
           nom: newAutreCaisse.value.nom.trim(),
+          groupe: newAutreCaisse.value.groupe,
           montant: Number(newAutreCaisse.value.montant),
           date: formattedDate,
-          caisse: caisseId,
+          caisse: caisseId.value,
         })
       }
     } else {
       autresCaisses.value.push({
         id: Date.now(),
         nom: newAutreCaisse.value.nom.trim(),
+        groupe: newAutreCaisse.value.groupe,
         montant: Number(newAutreCaisse.value.montant),
         date: formattedDate,
-        caisse: caisseId,
+        caisse: caisseId.value,
       })
     }
 
-    newAutreCaisse.value = { nom: '', montant: '', date: '' }
+    newAutreCaisse.value = { nom: '', groupe: '', montant: '', date: '' }
   }
 
   return {
@@ -172,6 +259,7 @@ export const useFinance = () => {
     membresCaisse,
     autresCaisses,
     caisseSelectionnee,
+  caisseId,
     filtreActif,
     membreFiltre,
     anneeFiltre,
@@ -185,8 +273,13 @@ export const useFinance = () => {
     selectionnerCaisse,
     ajouterPaiement,
     ajouterMembreCaisse,
+    fetchMembres,
     paiementsFiltres,
     membresFiltres,
+    activeGroupeId,
+    currentRole,
+    currentUser,
+    // existing returns ...
     totalMembres,
     autresCaissesFiltres,
     totalAutresCaisses,

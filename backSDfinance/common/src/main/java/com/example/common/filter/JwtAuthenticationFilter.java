@@ -39,7 +39,10 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
             String role = jwtUtil.getRoleFromToken(token);
             List<Long> groupeIds = jwtUtil.getGroupeIdsFromToken(token);
 
-            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+            List<SimpleGrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority(role),
+                    new SimpleGrantedAuthority("ROLE_" + role)
+            );
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     username, null, authorities);

@@ -45,6 +45,18 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
             User user = (User) authentication.getPrincipal();
+            
+            if (request.getGroupe() != null && !request.getGroupe().isBlank()) {
+                try {
+                    Long selectedGroupeId = Long.parseLong(request.getGroupe().trim());
+                    if (selectedGroupeId != 4L && user.getGroupeIds() != null && !user.getGroupeIds().isEmpty()) {
+                        if (!user.getGroupeIds().contains(selectedGroupeId)) {
+                            return ResponseEntity.status(401).body(java.util.Map.of("message", "Ce compte n'appartient pas au groupe sélectionné. Veuillez choisir le bon groupe."));
+                        }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getGroupeIds());
             return ResponseEntity.ok(AuthResponse.builder()
                     .token(token)

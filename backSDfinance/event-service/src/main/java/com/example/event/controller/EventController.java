@@ -43,7 +43,7 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('PRESIDENT')")
+    @PreAuthorize("hasAnyAuthority('PRESIDENT','LEADER')")
     public ResponseEntity<EventDto> update(@PathVariable Long id, @RequestBody UpdateEventRequest request) {
         EventDto updated = eventService.update(id, request);
         return ResponseEntity.ok(updated);

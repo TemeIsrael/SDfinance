@@ -37,6 +37,8 @@
           <option value="1">Jeune</option>
           <option value="2">Femme</option>
           <option value="3">Homme</option>
+          <option value="4">Aucun</option>
+
         </select>
       </div>
       <div class="role">
@@ -46,6 +48,7 @@
           <option value="PRESIDENT">Président</option>
           <option value="TRESORIER_CAISSIER">Trésorier/Caissier</option>
           <option value="LEADER">Leader</option>
+          <option value="COLLABORATOR">Collaborateur</option>
         </select>
       </div>
         <div class="date-adhesion">
@@ -88,23 +91,29 @@ const form = reactive({
 })
 
 const sInscrire = async () => {
+  if (!form.nom.trim() || !form.prenom.trim() || !form.password) {
+    alert('Veuillez remplir tous les champs obligatoires : Nom, Prénom et Mot de passe.')
+    return
+  }
+
   try {
     const generatedUsername = `${form.prenom.trim()} ${form.nom.trim()}`
-    const groupeIds = form.role === 'LEADER' ? [] : [parseInt(form.groupe)]
+    const groupeIds = (form.role === 'LEADER' || form.groupe === '4') ? [] : [parseInt(form.groupe)]
 
-    // Envoi réel vers le backend (aucun mock)
+    // Envoi réel vers le backend
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: generatedUsername, // concaténation Prénom + Nom
+        username: generatedUsername,
         password: form.password,
-        role: form.role, // enum UserRole attendu
-        groupeIds: groupeIds // tableau d'IDs de groupe
+        role: form.role,
+        groupeIds: groupeIds
       })
     })
 
     if (response.ok) {
+      alert('Inscription réussie ! Vous pouvez maintenant vous connecter.')
       router.push({
         path: '/connexion',
         query: { username: generatedUsername }
