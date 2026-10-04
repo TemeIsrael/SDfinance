@@ -21,6 +21,10 @@ public class Discussion {
     // The interlocutor's username – displayed as the conversation name
     private String counterpartUsername;
 
+    // Flag indicating the global discussion (unique)
+    @Column(name = "is_global", unique = true)
+    private Boolean isGlobal = false;
+
     // Preview of the latest message, updated on each new Message
     private String lastMessagePreview;
 

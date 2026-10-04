@@ -78,4 +78,7 @@ public class User implements UserDetails {
     @CollectionTable(name = "user_groupes", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "groupe_id")
     private List<Long> groupeIds = new ArrayList<>();
+
+    @Column(name = "photo_url")
+    private String photoUrl;
 }

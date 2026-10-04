@@ -17,4 +17,5 @@ public class RegisterRequest {
     private String password;
     private UserRole role;
     private List<Long> groupeIds = new ArrayList<>();
+    private String photoUrl;
 }

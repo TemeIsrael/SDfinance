@@ -31,7 +31,7 @@ public class EventController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('PRESIDENT', 'TRESORIER_CAISSIER')")
-    public EventDto getById(@PathVariable Long id) {
+    public EventDto getById(@PathVariable("id") Long id) {
         return eventService.getById(id);
     }
 
@@ -44,14 +44,14 @@ public class EventController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('PRESIDENT','LEADER')")
-    public ResponseEntity<EventDto> update(@PathVariable Long id, @RequestBody UpdateEventRequest request) {
+    public ResponseEntity<EventDto> update(@PathVariable("id") Long id, @RequestBody UpdateEventRequest request) {
         EventDto updated = eventService.update(id, request);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('PRESIDENT')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         eventService.delete(id);
         return ResponseEntity.noContent().build();
     }

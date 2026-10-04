@@ -72,7 +72,9 @@ public class MemberService {
                 .telephone(request.getTelephone())
                 .email(request.getEmail())
                 .adresse(request.getAdresse())
+                .photoUrl(request.getPhotoUrl())
                 .groupeId(request.getGroupeId())
+                .dateAjout(request.getDateAjout() != null ? request.getDateAjout() : java.time.LocalDate.now())
                 .build();
         return toDto(memberRepository.save(member));
     }
@@ -91,6 +93,7 @@ public class MemberService {
         member.setTelephone(request.getTelephone());
         member.setEmail(request.getEmail());
         member.setAdresse(request.getAdresse());
+        member.setPhotoUrl(request.getPhotoUrl());
         return toDto(memberRepository.save(member));
     }
 
@@ -113,7 +116,9 @@ public class MemberService {
                 .telephone(member.getTelephone())
                 .email(member.getEmail())
                 .adresse(member.getAdresse())
+                .photoUrl(member.getPhotoUrl())
                 .groupeId(member.getGroupeId())
+                .dateAjout(member.getDateAjout())
                 .build();
     }
 }

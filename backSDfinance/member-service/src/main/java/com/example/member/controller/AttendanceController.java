@@ -30,33 +30,33 @@ public class AttendanceController {
 
     @GetMapping("/sessions/{id}")
     @PreAuthorize("hasAnyAuthority('PRESIDENT', 'LEADER')")
-    public ResponseEntity<AttendanceSessionDto> getSessionById(@PathVariable Long id) {
+    public ResponseEntity<AttendanceSessionDto> getSessionById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(attendanceService.getSessionById(id));
     }
 
     @GetMapping("/sessions/{id}/records")
     @PreAuthorize("hasAnyAuthority('PRESIDENT', 'LEADER')")
-    public ResponseEntity<List<AttendanceRecordDto>> getSessionRecords(@PathVariable Long id) {
+    public ResponseEntity<List<AttendanceRecordDto>> getSessionRecords(@PathVariable("id") Long id) {
         return ResponseEntity.ok(attendanceService.getSessionRecords(id));
     }
 
     @PostMapping("/sessions/{id}/batch")
     @PreAuthorize("hasAuthority('PRESIDENT')")
     public ResponseEntity<List<AttendanceRecordDto>> submitBatchAttendance(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody SubmitBatchAttendanceRequest request) {
         return ResponseEntity.ok(attendanceService.submitBatchAttendance(id, request));
     }
 
     @PutMapping("/sessions/{id}/close")
     @PreAuthorize("hasAuthority('PRESIDENT')")
-    public ResponseEntity<AttendanceSessionDto> closeSession(@PathVariable Long id) {
+    public ResponseEntity<AttendanceSessionDto> closeSession(@PathVariable("id") Long id) {
         return ResponseEntity.ok(attendanceService.closeSession(id));
     }
 
     @GetMapping("/stats/group/{groupeId}")
     @PreAuthorize("hasAnyAuthority('PRESIDENT', 'LEADER')")
-    public ResponseEntity<AttendanceStatsDto> getGroupAttendanceStats(@PathVariable Long groupeId) {
+    public ResponseEntity<AttendanceStatsDto> getGroupAttendanceStats(@PathVariable("groupeId") Long groupeId) {
         return ResponseEntity.ok(attendanceService.getGroupAttendanceStats(groupeId));
     }
 }

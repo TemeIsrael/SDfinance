@@ -1,9 +1,7 @@
 package com.example.finance.controller;
 
-import com.example.finance.dto.AccountDto;
-import com.example.finance.dto.CreateTransactionRequest;
-import com.example.finance.dto.FinanceSummaryDto;
-import com.example.finance.dto.TransactionDto;
+import com.example.finance.dto.CreateFinanceRecordRequest;
+import com.example.finance.dto.FinanceRecordDto;
 import com.example.finance.service.FinanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,27 +17,15 @@ public class FinanceController {
 
     private final FinanceService financeService;
 
-    @GetMapping("/accounts")
-    @PreAuthorize("hasAnyAuthority('PRESIDENT', 'TRESORIER_CAISSIER', 'LEADER', 'MEMBRE')")
-    public List<AccountDto> getAccounts() {
-        return financeService.getAccounts();
+    @GetMapping("/records")
+    @PreAuthorize("hasAnyAuthority('PRESIDENT', 'TRESORIER_CAISSIER', 'LEADER', 'MEMBRE', 'COLLABORATOR')")
+    public List<FinanceRecordDto> getRecords() {
+        return financeService.getRecords();
     }
 
-    @GetMapping("/transactions")
-    @PreAuthorize("hasAnyAuthority('PRESIDENT', 'TRESORIER_CAISSIER', 'LEADER', 'MEMBRE')")
-    public List<TransactionDto> getTransactions() {
-        return financeService.getTransactions();
-    }
-
-    @GetMapping("/summary")
-    @PreAuthorize("hasAuthority('LEADER')")
-    public ResponseEntity<List<FinanceSummaryDto>> getSummary() {
-        return ResponseEntity.ok(financeService.getFinanceSummary());
-    }
-
-    @PostMapping("/transactions")
-    @PreAuthorize("hasAuthority('TRESORIER_CAISSIER')")
-    public ResponseEntity<TransactionDto> addTransaction(@RequestBody CreateTransactionRequest request) {
-        return ResponseEntity.ok(financeService.addTransaction(request));
+    @PostMapping("/records")
+    @PreAuthorize("hasAnyAuthority('PRESIDENT', 'TRESORIER_CAISSIER', 'LEADER', 'COLLABORATOR')")
+    public ResponseEntity<FinanceRecordDto> addRecord(@RequestBody CreateFinanceRecordRequest request) {
+        return ResponseEntity.ok(financeService.addRecord(request));
     }
 }

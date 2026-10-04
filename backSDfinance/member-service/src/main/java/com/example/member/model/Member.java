@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -37,6 +39,13 @@ public class Member {
     private String telephone;
     private String email;
     private String adresse;
+
+    @Column(name = "photo_url")
+    private String photoUrl;
+
+    /** Date d'ajout du membre (saisie manuelle ou auto) */
+    @Column(name = "date_ajout")
+    private LocalDate dateAjout;
 
     /** Clé étrangère vers le groupe : filtrage RBAC */
     @Column(name = "groupe_id")

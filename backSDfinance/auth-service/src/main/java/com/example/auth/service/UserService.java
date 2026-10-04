@@ -27,7 +27,7 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public User register(String username, String rawPassword, UserRole role, List<Long> groupeIds) {
+    public User register(String username, String rawPassword, UserRole role, List<Long> groupeIds, String photoUrl) {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
@@ -37,6 +37,7 @@ public class UserService implements UserDetailsService {
                 .role(role)
                 .enabled(true)
                 .groupeIds(groupeIds != null ? groupeIds : new ArrayList<>())
+                .photoUrl(photoUrl)
                 .build();
         return userRepository.save(user);
     }
