@@ -8,6 +8,7 @@
       <table class="table">
         <thead>
           <tr>
+            <th>Photo</th>
             <th>Nom d'utilisateur</th>
             <th>Rôle</th>
             <th>Groupes</th>
@@ -16,9 +17,15 @@
         </thead>
         <tbody>
           <tr v-for="user in users" :key="user.id">
+            <td class="avatar-cell">
+              <img v-if="user.photoUrl" :src="user.photoUrl" alt="Avatar" class="avatar-img" />
+              <div v-else class="avatar-placeholder">
+                {{ user.username ? user.username.charAt(0).toUpperCase() : '👤' }}
+              </div>
+            </td>
             <td>{{ user.username }}</td>
             <td>{{ user.role }}</td>
-            <td>{{ user.groupeIds.join(', ') || 'N/A' }}</td>
+            <td>{{ user.groupeIds ? user.groupeIds.join(', ') : 'N/A' }}</td>
             <td>
               <button class="btn btn-edit">Modifier</button>
             </td>
@@ -74,5 +81,27 @@ th {
 .btn-edit {
   background-color: var(--primary-dark);
   color: white;
+}
+.avatar-cell {
+  width: 46px;
+  text-align: center;
+}
+.avatar-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.avatar-placeholder {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.85rem;
 }
 </style>

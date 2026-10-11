@@ -19,6 +19,11 @@
           <input v-model.number="newExpenseAmt" type="number" placeholder="Montant" />
           <button @click="addTempExpense" class="btn primary">Ajouter</button>
         </div>
+        <ul v-if="newExpenses.length > 0" class="temp-expenses">
+          <li v-for="(exp, index) in newExpenses" :key="index">
+            {{ exp.description }} : {{ exp.amount }} FCFA
+          </li>
+        </ul>
         <button @click="createNewEvent" class="btn primary" style="margin-top:12px;">Créer</button>
       </div>
     </section>
@@ -42,7 +47,18 @@
     </section>
 
 <section v-if="activeEvent" class="expenses-section">
-  <h4>Détails de l'événement « {{ activeEvent.title }} »</h4>
+  <div class="header-with-export">
+    <h4 style="margin: 0;">Détails de l'événement « {{ activeEvent.title }} »</h4>
+    <ExportMenu
+      :title="'Rapport Dépenses - ' + activeEvent.title"
+      :subtitle="'Date : ' + formatDate(activeEvent.startDate) + (activeEvent.location ? ' | Lieu : ' + activeEvent.location : '')"
+      :filename="'evenement_' + (activeEvent.id || 'depenses')"
+      :headers="['Description', 'Montant (FCFA)']"
+      :rows="expensesExportRows"
+      :summary="expensesExportSummary"
+      size="small"
+    />
+  </div>
   <table class="table">
     <thead>
       <tr>
@@ -56,6 +72,12 @@
         <td>{{ Number(exp.amount).toFixed(2) }}</td>
       </tr>
     </tbody>
+    <tfoot>
+      <tr>
+        <th>Total</th>
+        <th>{{ totalExpensesAmt.toFixed(2) }} FCFA</th>
+      </tr>
+    </tfoot>
   </table>
 </section>
     <div v-else class="empty-state">Sélectionnez un événement</div>
@@ -66,9 +88,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEvent } from '@/composable/useEvent'
+import ExportMenu from '@/components/ExportMenu.vue'
 
 // Auth & role
-const { currentRole } = useAuthStore()
+const { currentRole, state } = useAuthStore()
 const isLeader = computed(() => ['LEADER', 'PRESIDENT'].includes(currentRole.value)) // leaders (including presidents) can edit events
 const isPresident = computed(() => currentRole.value === 'PRESIDENT')
 
@@ -85,6 +108,22 @@ const {
   updateEvent,
   createEvent,
 } = useEvent()
+
+// Export computed properties
+const expensesExportRows = computed(() => {
+  return (filteredExpenses.value || []).map(exp => [
+    exp.description || '',
+    Number(exp.amount || 0).toFixed(2) + ' FCFA'
+  ])
+})
+
+const totalExpensesAmt = computed(() => {
+  return (filteredExpenses.value || []).reduce((sum, exp) => sum + Number(exp.amount || 0), 0)
+})
+
+const expensesExportSummary = computed(() => [
+  { label: 'Total Dépenses', value: totalExpensesAmt.value.toFixed(2) + ' FCFA' }
+])
 
 // UI state
 const yearFilter = ref('')
@@ -127,24 +166,51 @@ watch(activeEvent, ev => {
   }
 })
 
+const addTempExpense = () => {
+  if (!newExpenseDesc.value.trim() || !newExpenseAmt.value) return
+  newExpenses.value.push({
+    description: newExpenseDesc.value,
+    amount: newExpenseAmt.value
+  })
+  newExpenseDesc.value = ''
+  newExpenseAmt.value = 0
+}
+
 const createNewEvent = async () => {
   if (!newEventTitle.value.trim()) return
+  const groupeId = Number(state.activeGroupeId || state.user?.groupeIds?.[0] || 1)
   const payload = {
     title: newEventTitle.value,
     startDate: newEventDate.value ? new Date(newEventDate.value).toISOString() : new Date().toISOString(),
     description: newEventDesc.value,
     location: newEventLocation.value,
+    groupeId: groupeId
   }
   await createEvent(payload)
+  
   // after creation, refresh list and set the newly created event as active
   await fetchEvents()
   const created = events.value[events.value.length - 1]
-  if (created) activeEvent.value = created
+  if (created) {
+    activeEvent.value = created
+    
+    // Add all temporary expenses
+    for (const exp of newExpenses.value) {
+      await addExpense({
+        description: exp.description,
+        amount: Number(exp.amount),
+        date: new Date().toISOString(),
+      })
+    }
+  }
+  
   // reset form
   newEventTitle.value = ''
   newEventDate.value = ''
   newEventDesc.value = ''
   newEventLocation.value = ''
+  newExpenses.value = []
+  showExpenseForm.value = false
 }
 
 const saveEventEdits = async () => {
@@ -257,5 +323,12 @@ const removeExpense = async id => await deleteExpense(id)
   text-align: center;
   color: #666;
   padding: 40px 0;
+}
+.temp-expenses {
+  margin-top: 10px;
+  list-style: disc;
+  padding-left: 20px;
+  font-size: 0.9em;
+  color: #555;
 }
 </style>

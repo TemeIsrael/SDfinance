@@ -17,7 +17,17 @@
 
     <!-- Onglet 1 : Liste des membres -->
     <div v-if="activeTab === 'membres'">
-      <h2>Liste des membres</h2>
+      <div class="header-with-export">
+        <h2 style="margin: 0;">Liste des membres</h2>
+        <ExportMenu
+          title="Liste Officielle des Membres"
+          subtitle="Communauté SDfinance"
+          filename="membres_sdfinance"
+          :headers="membresExportHeaders"
+          :rows="membresExportRows"
+          :summary="membresExportSummary"
+        />
+      </div>
 
       <!-- Filtre par groupe : visible uniquement pour le LEADER (vue globale) -->
       <div class="menu" v-if="currentRole === 'LEADER'">
@@ -34,7 +44,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>Profil</th>
             <th>Nom</th>
             <th v-if="currentRole === 'LEADER'">Groupe</th>
             <th>Date d'ajout</th>
@@ -48,7 +58,12 @@
             <td :colspan="currentRole === 'LEADER' ? 4 : 3">Aucun membre enregistré</td>
           </tr>
           <tr v-for="m in membresFiltres" :key="m.id">
-            <td>{{ m.id }}</td>
+            <td class="avatar-cell">
+              <img v-if="m.photoUrl" :src="m.photoUrl" alt="Photo" class="avatar-img" />
+              <div v-else class="avatar-placeholder">
+                {{ m.nom ? m.nom.charAt(0).toUpperCase() : '👤' }}
+              </div>
+            </td>
             <td>{{ m.nom }}</td>
             <td v-if="currentRole === 'LEADER'">{{ getGroupeLabel(m.groupe) }}</td>
             <td>{{ m.date }}</td>
@@ -71,6 +86,19 @@
           v-model="newEnfant.nom"
           placeholder="Nom et Prénom de l'enfant"
         />
+        <input
+          type="url"
+          id="photoEnfant"
+          v-model="newEnfant.photoUrl"
+          placeholder="Lien de la photo de profil (optionnel)"
+        />
+        <input
+          type="date"
+          id="dateAjoutEnfant"
+          v-model="newEnfant.dateAjout"
+          title="Date d'ajout (laisser vide pour aujourd'hui)"
+        />
+        <small style="display:block; margin-top:2px; color:rgba(255,255,255,0.8);">Date d'ajout (optionnel — aujourd'hui par défaut)</small>
         <div class="pourAjout">
           <button class="btn" type="submit">Ajouter</button>
         </div>
@@ -86,6 +114,18 @@
           placeholder="Nom et Prénom"
           required
         />
+        <label for="photoMembre" class="photo-circle">
+          <img v-if="newMembreCaisse.photoUrl" :src="newMembreCaisse.photoUrl" class="photo-preview" />
+          <span v-else class="photo-plus">+</span>
+        </label>
+        <input type="file" id="photoMembre" accept="image/*" @change="onMemberPhotoSelected" style="display:none" />
+        <input
+          type="date"
+          id="dateAjoutMembre"
+          v-model="newMembreCaisse.dateAjout"
+          title="Date d'ajout (laisser vide pour aujourd'hui)"
+        />
+        <small style="display:block; margin-top:2px; color:rgba(255,255,255,0.8);">Date d'ajout (optionnel — aujourd'hui par défaut)</small>
         <div class="pourAjout">
           <button class="btn" id="soumission" type="submit">Ajouter au Groupe</button>
         </div>
@@ -174,7 +214,21 @@
 
           <!-- Feuille d'appel dépliée pour la session active -->
           <div v-if="activeSession?.id === sess.id" class="feuille-appel">
-            <h4>Feuille d'Appel : {{ sess.titre }}</h4>
+            <div class="header-with-export" style="margin-bottom: 8px;">
+              <h4 style="margin: 0;">Feuille d'Appel : {{ sess.titre }}</h4>
+              <ExportMenu
+                :title="'Rapport Présences - ' + sess.titre"
+                :subtitle="'Date : ' + new Date(sess.dateSession).toLocaleString('fr-FR') + ' | Type : ' + sess.typeCulte"
+                :filename="'appel_' + sess.id"
+                :headers="['Membre', 'Statut Présence']"
+                :rows="appelExportRows"
+                :summary="[
+                  { label: 'Présents', value: sess.totalPresents },
+                  { label: 'Absents', value: sess.totalAbsents }
+                ]"
+                size="small"
+              />
+            </div>
             <p v-if="sess.cloturee" class="warn-msg">⚠️ Cette séance est clôturée. La modification est désactivée.</p>
 
             <table class="table table-appel">
@@ -229,6 +283,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useGetData } from '@/composable/useGetData.js'
 import { useFinance } from '@/composable/useFinance.js'
 import { getGroupeLabel, membreGroupOptions } from '@/data/financeData.js'
+import ExportMenu from '@/components/ExportMenu.vue'
 
 const { isLoading } = useGetData()
 const { 
@@ -240,23 +295,90 @@ const {
   totalMembres, 
   currentRole,
   fetchMembres,
-  activeGroupeId 
+  activeGroupeId,
+  userGroups
 } = useFinance()
+
+// Export Membres
+const membresExportHeaders = computed(() => {
+  return currentRole.value === 'LEADER'
+    ? ['Nom', 'Groupe', 'Date d\'ajout']
+    : ['Nom', 'Date d\'ajout']
+})
+
+const membresExportRows = computed(() => {
+  return (membresFiltres.value || []).map(m => {
+    if (currentRole.value === 'LEADER') {
+      return [m.nom || '', getGroupeLabel(m.groupe), m.date || '']
+    }
+    return [m.nom || '', m.date || '']
+  })
+})
+
+const membresExportSummary = computed(() => [
+  { label: 'Nombre total de membres', value: totalMembres.value }
+])
+
+// Export Feuille d'Appel
+const appelExportRows = computed(() => {
+  return (currentRecords.value || []).map(r => [
+    `${r.memberNom || ''} ${r.memberPrenom || ''}`.trim(),
+    r.statut === 'PRESENT' ? 'Présent' : 'Absent'
+  ])
+})
+
+function onMemberPhotoSelected(event) {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = e => {
+      newMembreCaisse.photoUrl = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
 
 const groupeOptions = computed(() => membreGroupOptions)
 const activeTab = ref('membres')
 
-// Formulaire enfants (COLLABORATOR)
-const newEnfant = ref({ nom: '' })
-const ajouterEnfant = () => {
+// Formulaire enfants (COLLABORATOR) - persistant via API
+const newEnfant = ref({ nom: '', photoUrl: '', dateAjout: '' })
+const ajouterEnfant = async () => {
   if (!newEnfant.value.nom) return
-  membresCaisse.value.push({
-    id: membresCaisse.value.length + 1,
-    nom: newEnfant.value.nom,
-    groupe: 'enfants',
-    date: new Date().toLocaleDateString('fr-FR'),
-  })
-  newEnfant.value = { nom: '' }
+  const token = localStorage.getItem('token')
+  const fullName = newEnfant.value.nom.trim()
+  const spaceIndex = fullName.indexOf(' ')
+  const nom = spaceIndex > 0 ? fullName.substring(0, spaceIndex) : fullName
+  const prenom = spaceIndex > 0 ? fullName.substring(spaceIndex + 1) : '.'
+
+  try {
+    const res = await fetch('/api/members', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        nom,
+        prenom,
+        sexe: 'H',
+        statut: 'ACTIF',
+        groupeId: 5, // Groupe Enfants
+        photoUrl: newEnfant.value.photoUrl || null,
+        dateAjout: newEnfant.value.dateAjout || null,
+      }),
+    })
+    if (res.ok) {
+      await fetchMembres()
+      newEnfant.value = { nom: '', photoUrl: '', dateAjout: '' }
+    } else {
+      const err = await res.json().catch(() => ({}))
+      alert(err.message || 'Erreur lors de l\'ajout de l\'enfant.')
+    }
+  } catch (err) {
+    console.error('Erreur ajout enfant:', err)
+    alert('Erreur de connexion. Vérifiez votre connexion et réessayez.')
+  }
 }
 
 // State pour la prise d'appel
@@ -295,7 +417,7 @@ const creerSessionAppel = async () => {
 
   isSubmittingSession.value = true
   const token = localStorage.getItem('token')
-  const groupeId = Number(activeGroupeId.value || 1)
+  const groupeId = Number(activeGroupeId.value || userGroups?.value?.[0] || 1)
 
   try {
     const res = await fetch('/api/members/attendance/sessions', {
@@ -482,6 +604,36 @@ th, td {
 th {
   background-color: rgb(148, 74, 74);
   color: white;
+}
+
+.avatar-cell {
+  width: 46px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-dark);
+  display: block;
+  margin: 0 auto;
+}
+
+.avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-dark);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin: 0 auto;
 }
 
 .btn {
@@ -671,6 +823,15 @@ input, select {
   gap: 10px;
   justify-content: flex-end;
   margin-top: 10px;
+}
+
+.header-with-export {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .warn-msg {

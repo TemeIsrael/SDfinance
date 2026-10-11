@@ -31,8 +31,7 @@
           <label for="telephone">Tél</label>
           <input type="text" id="telephone" v-model="form.telephone" />
         </div>
-        <div class="groupe">
-        <label for="groupe">Groupe</label>
+        
         <select id="groupe" name="groupe" v-model="form.groupe">
           <option value="1">Jeune</option>
           <option value="2">Femme</option>
@@ -40,7 +39,7 @@
           <option value="4">Aucun</option>
 
         </select>
-      </div>
+  
       <div class="role">
         <label for="role">Rôle</label>
         <select id="role" name="role" v-model="form.role">
@@ -51,6 +50,13 @@
           <option value="COLLABORATOR">Collaborateur</option>
         </select>
       </div>
+        <div class="photo-upload">
+          <label for="photoFile" class="photo-circle">
+            <img v-if="form.photoUrl" :src="form.photoUrl" class="photo-preview" />
+            <span v-else class="photo-plus">Profil</span>
+          </label>
+          <input type="file" id="photoFile" accept="image/*" @change="onPhotoSelected" style="display:none" />
+        </div>
         <div class="date-adhesion">
           <label for="dateAdhesion">Date d'adhésion</label>
           <input type="date" id="dateAdhesion" v-model="form.dateAdhesion" />
@@ -88,9 +94,20 @@ const form = reactive({
   role: 'MEMBRE',
   dateAdhesion: '',
   sexe: '',
+  photoUrl: ''
 })
+function onPhotoSelected(event) {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = e => {
+      form.photoUrl = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
 
-const sInscrire = async () => {
+ const sInscrire = async () => {
   if (!form.nom.trim() || !form.prenom.trim() || !form.password) {
     alert('Veuillez remplir tous les champs obligatoires : Nom, Prénom et Mot de passe.')
     return
@@ -108,7 +125,8 @@ const sInscrire = async () => {
         username: generatedUsername,
         password: form.password,
         role: form.role,
-        groupeIds: groupeIds
+        groupeIds: groupeIds,
+        photoUrl: form.photoUrl
       })
     })
 
@@ -194,8 +212,43 @@ select {
 
 .mail,
 .password,
-.date-adhesion {
+.date-adhesion,
+.photo {
   grid-column: 1 / 3;
+}
+
+.role {
+  grid-column: 1 / 2;
+}
+
+.photo-upload {
+  grid-column: 2 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.photo-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-plus {
+  font-size: 2rem;
+  color: white;
 }
 
 .btn {

@@ -22,17 +22,40 @@
       <div class="AjoutTrans" v-if="canManageFinance">
         <h4>Ajouter une transaction</h4>
         <form id="form-transaction" @submit.prevent="ajouterTransaction">
-          <label for="desc">Description</label>
-          <input type="text" id="desc" v-model="newTrans.description" placeholder="depot/retrait" />
+          <label for="desc">Type de transaction</label>
+          <select id="desc" v-model="newTrans.description">
+            <option value="" disabled>Sélectionner (depot/retrait)</option>
+            <option value="depot">Dépôt (Entrée)</option>
+            <option value="retrait">Retrait (Sortie)</option>
+          </select>
           <label for="montant">Montant</label>
-          <input type="number" id="montant" v-model="newTrans.montant" placeholder="montant" />
+          <input type="number" id="montant" v-model="newTrans.montant" placeholder="Montant" />
           <label for="motif">Motif</label>
-          <input
-            type="text"
-            id="motif"
-            v-model="newTrans.motif"
-            placeholder="Ex: fête des récoltes"
-          />
+          <select id="motif" v-model="newTrans.motif">
+            <option value="" disabled>Sélectionner un motif</option>
+            <option value="FACTURES">sortie_factures</option>
+            <option value="CONSTRUCTION">sortie_constructions</option>
+            <option value="RECEPTION">sortie_réception</option>
+            <option value="TRANSPORT_DES_MEMBRES">sortie_transport_des_membres</option>
+            <option value="TAXI">sortie_taxi</option>
+            <option value="SOUTIEN_DES_PASTEURS">sortie_soutien_des_pasteurs</option>
+            <option value="ASSISTANCE">sortie_assistance</option>
+            <option value="ACHAT_ET_DU_MATERIEL_ENTRETIEN">sortie_Achat_et_entretien_du_matériel</option>
+            <option value="SECRETARIAT">sortie_secrétariat</option>
+            <option value="TRVAUX_DIVERS">sortie_travaux_divers</option>
+            <option value="EMPRUNT">sortie_emprunt</option>
+            <option value="REMPBOURSEMENT">entree_remboursement</option>
+            <option value="OFFRANDES">entree_offrandes</option>
+            <option value="DIMES">entree_dîmes</option>
+            <option value="ACTIONS_DE_GRACE">entree_actions_de_grâces</option>
+            <option value="VOEUX">entree_vœux</option>
+            <option value="DONS_VOLONTAIRES">entree_dons_volontaires</option>
+            <option value="CONSECRATION">entree_offrandes_de_consécration</option>
+            <option value="PENTECOTE">entree_collecte_Pentecôte</option>
+            <option value="PAQUE">entree_collecte_Pâques</option>
+            <option value="RECOLTE">entree_collecte_Récoltes</option>
+            <option value="EVANGELISATION">entree_collecte_Évangélisation</option>
+          </select>
           <label for="date">Date</label>
           <input type="date" id="date" v-model="newTrans.date" />
           <div class="pourAjout">
@@ -43,7 +66,17 @@
 
       <!-- Liste transactions -->
       <div class="AfficTrans">
-        <h4>Liste des transactions</h4>
+        <div class="header-with-export">
+          <h4>Liste des transactions</h4>
+          <ExportMenu
+            title="Rapport des Transactions Financières"
+            filename="transactions_financieres"
+            :headers="['Description', 'Montant', 'Motif', 'Date']"
+            :rows="transactionsExportRows"
+            :summary="transactionsExportSummary"
+            size="small"
+          />
+        </div>
         <table class="table">
           <thead>
             <tr>
@@ -90,85 +123,25 @@
       <div class="detail" v-if="caisseSelectionnee">
         <h4 id="titreCaisse">{{ caisseSelectionnee.nom }}</h4>
 
-        <div v-if="caisseSelectionnee.id === 'fonctionnement'" class="detail1">
+        <div class="detail1">
           <div class="AfficTrans">
-            <h4>{{ currentRole === 'MEMBRE' ? 'Historique de mes cotisations mensuelles' : 'Liste de la caisse de fonctionnement' }}</h4>
-            <div class="filtres" v-if="currentRole === 'LEADER'">
-              <select v-model="membreFiltre" class="input-annee">
-                <option v-for="option in groupeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+            <div class="header-with-export">
+              <h4 v-if="caisseSelectionnee && caisseSelectionnee.id === 'offrandes'" style="margin: 0;">
+                {{ currentRole === 'MEMBRE' ? 'Historique de mes Dîmes et Actions de grâce' : 'Liste des transactions' }}
+              </h4>
+              <h4 v-else style="margin: 0;">
+                {{ currentRole === 'MEMBRE' ? 'Mon historique personnel' : 'Liste des entrées' }}
+              </h4>
+              <ExportMenu
+                :title="'Rapport - Caisse ' + (caisseSelectionnee?.nom || 'Financière')"
+                :subtitle="'Filtre actif : ' + (filtreActif || anneeFiltre || 'Tous')"
+                :filename="'caisse_' + (caisseSelectionnee?.id || 'export')"
+                :headers="caisseExportHeaders"
+                :rows="caisseExportRows"
+                :summary="caisseExportSummary"
+                size="small"
+              />
             </div>
-            <!-- Table MEMBRE : 3 colonnes ID / Date / Montant -->
-            <table class="table" v-if="currentRole === 'MEMBRE'">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date</th>
-                  <th>Montant</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in autresCaissesFiltres" :key="item.id">
-                  <td>{{ item.id }}</td>
-                  <td>{{ item.date }}</td>
-                  <td>{{ formatCurrency(item.montant) }}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="2">Total</td>
-                  <td>{{ formatCurrency(totalAutresCaisses) }}</td>
-                </tr>
-              </tfoot>
-            </table>
-            <!-- Table non-MEMBRE : colonnes complètes -->
-            <table class="table" v-else>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nom</th>
-                  <th v-if="currentRole === 'LEADER' || currentRole === 'COLLABORATOR'">Groupe</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="m in membresFiltres" :key="m.id">
-                  <td>{{ m.id }}</td>
-                  <td>{{ m.nom }}</td>
-                  <td v-if="currentRole === 'LEADER' || currentRole === 'COLLABORATOR'">{{ getGroupeLabel(m.groupe) }}</td>
-                  <td>{{ m.date }}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td :colspan="currentRole === 'LEADER' || currentRole === 'COLLABORATOR' ? 3 : 2">Total</td>
-                  <td>{{ totalMembres }}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          <div class="AjoutTrans" v-if="canManageFinance">
-            <form @submit.prevent="ajouterMembreCaisse">
-              <h4>Ajouter un membre</h4>
-              <input type="text" v-model="newMembreCaisse.nom" placeholder="Nom et prénom" />
-              <div class="pourAjout">
-                <button class="btn" type="submit">Ajouter</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="detail1" v-else>
-          <div class="AfficTrans">
-            <h4 v-if="caisseSelectionnee && caisseSelectionnee.id === 'offrandes'">
-              {{ currentRole === 'MEMBRE' ? 'Historique de mes Dîmes et Actions de grâce' : 'Liste des transactions' }}
-            </h4>
-            <h4 v-else>
-              {{ currentRole === 'MEMBRE' ? 'Mon historique personnel' : 'Liste des entrées' }}
-            </h4>
             <div class="filtres" v-if="caisseSelectionnee && caisseSelectionnee.id === 'offrandes' && currentRole !== 'PRESIDENT'">
               <template v-for="filtre in filtresPaiement" :key="filtre.value">
                 <button
@@ -194,7 +167,6 @@
             <table class="table" v-if="currentRole !== 'MEMBRE'">
   <thead>
     <tr>
-      <th>ID</th>
       <th v-if="currentRole !== 'MEMBRE'">Nom</th>
       <th v-if="currentRole !== 'MEMBRE' && (currentRole === 'LEADER' || currentRole === 'COLLABORATOR')">Groupe</th>
       <th>Date</th>
@@ -203,14 +175,12 @@
   </thead>
   <tbody>
     <tr v-for="p in paiementsFiltres" :key="p.id">
-      <td>{{ p.id }}</td>
       <td v-if="currentRole !== 'MEMBRE'">{{ p.nom }}</td>
       <td v-if="currentRole !== 'MEMBRE' && (currentRole === 'LEADER' || currentRole === 'COLLABORATOR')">{{ getGroupeLabel(p.groupeId || p.groupe) }}</td>
       <td>{{ p.date }}</td>
       <td>{{ formatCurrency(p.montant) }}</td>
     </tr>
     <tr v-for="item in autresCaissesFiltres" :key="item.id">
-      <td>{{ item.id }}</td>
       <td v-if="currentRole !== 'MEMBRE'">{{ item.nom }}</td>
       <td v-if="currentRole !== 'MEMBRE' && (currentRole === 'LEADER' || currentRole === 'COLLABORATOR')">{{ getGroupeLabel(item.groupeId || item.groupe) }}</td>
       <td>{{ item.date }}</td>
@@ -219,8 +189,8 @@
   </tbody>
   <tfoot v-if="caisseSelectionnee?.id !== 'offrandes'">
     <tr>
-      <td :colspan="currentRole === 'LEADER' || currentRole === 'COLLABORATOR' ? 4 : 3">Total</td>
-      <td>{{ formatCurrency(totalAutresCaisses) }}</td>
+      <td :colspan="currentRole === 'LEADER' || currentRole === 'COLLABORATOR' ? 3 : 2">Total</td>
+      <td>{{ formatCurrency(totalCaisseComplet) }}</td>
     </tr>
   </tfoot>
 </table>
@@ -228,26 +198,23 @@
 <table class="table" v-else-if="caisseSelectionnee && ['fonctionnement','epargne','basilique'].includes(caisseSelectionnee.id)">
   <thead>
     <tr>
-      <th>ID</th>
       <th>Date</th>
       <th>Montant</th>
     </tr>
   </thead>
   <tbody>
     <tr v-for="p in paiementsFiltres" :key="p.id">
-      <td>{{ p.id }}</td>
       <td>{{ p.date }}</td>
       <td>{{ formatCurrency(p.montant) }}</td>
     </tr>
     <tr v-for="item in autresCaissesFiltres" :key="item.id">
-      <td>{{ item.id }}</td>
       <td>{{ item.date }}</td>
       <td>{{ formatCurrency(item.montant) }}</td>
     </tr>
   </tbody>
   <tfoot v-if="caisseSelectionnee && caisseSelectionnee.id !== 'offrandes'">
     <tr>
-      <td colspan="2">Total</td>
+      <td colspan="1">Total</td>
       <td>{{ formatCurrency(totalAutresCaisses) }}</td>
     </tr>
   </tfoot>
@@ -257,11 +224,8 @@
           <div class="AjoutTrans" v-if="canManageFinance && caisseSelectionnee && caisseSelectionnee.id === 'offrandes'">
             <form @submit.prevent="ajouterPaiement">
               <h4>Ajouter un paiement</h4>
-              <select v-model="newPaiement.nom" @change="newPaiement.groupe = membresCaisse.find(m => m.nom === newPaiement.nom)?.groupe">
-                <option value="" disabled>Sélectionner un membre</option>
-                <option v-for="m in membresCaisse" :key="m.id" :value="m.nom">{{ m.nom }}</option>
-              </select>
-              <input type="number" v-model="newPaiement.montant" placeholder="montant" />
+              <input type="text" v-model="newPaiement.nom" placeholder="Nom du membre" />
+              <input type="number" v-model="newPaiement.montant" placeholder="Montant" />
               <label for="typePaiement">Type</label>
               <select id="typePaiement" v-model="newPaiement.type">
                 <option value="dime">Dime</option>
@@ -278,10 +242,7 @@
           <div class="AjoutTrans" v-else-if="canManageFinance">
             <form @submit.prevent="ajouterAutreCaisse">
               <h4>Ajouter une entrée</h4>
-              <select v-model="newAutreCaisse.nom" @change="newAutreCaisse.groupe = membresCaisse.find(m => m.nom === newAutreCaisse.nom)?.groupe">
-                <option value="" disabled>Sélectionner un membre</option>
-                <option v-for="m in membresCaisse" :key="m.id" :value="m.nom">{{ m.nom }}</option>
-              </select>
+              <input type="text" v-model="newAutreCaisse.nom" placeholder="Nom du membre" />
               <input type="number" v-model="newAutreCaisse.montant" placeholder="Montant" />
               <input type="date" v-model="newAutreCaisse.date" />
               <div class="pourAjout">
@@ -302,6 +263,7 @@ import { useFinance } from '@/composable/useFinance.js'
 import { formatCurrency, getGroupeLabel, membreGroupOptions } from '@/data/financeData.js'
 import { useAuthStore } from '@/stores/auth'
 import { hasPermission } from '@/utils/permissions'
+import ExportMenu from '@/components/ExportMenu.vue'
 
 const { isLoading, getData } = useGetData()
 const {
@@ -329,6 +291,8 @@ const {
   totalMembres,
   autresCaissesFiltres,
   totalAutresCaisses,
+  totalCaisseComplet,
+  fetchFinanceData,
 } = useFinance()
 
 const { currentRole } = useAuthStore()
@@ -339,7 +303,62 @@ const groupeFormOptions = computed(() =>
   membreGroupOptions.filter((option) => option.value !== 'tous'),
 )
 
-onMounted(() => getData('transactions'))
+// Computed export data pour transactions
+const transactionsExportRows = computed(() => {
+  return (transactions.value || []).map(t => [
+    t.description || '',
+    formatCurrency(t.montant),
+    t.motif || '',
+    t.date || ''
+  ])
+})
+
+const transactionsExportSummary = computed(() => [
+  { label: 'Total Entrées', value: formatCurrency(totalEntrees.value) },
+  { label: 'Total Sorties', value: formatCurrency(totalSorties.value) }
+])
+
+// Computed export data pour caisses
+const caisseExportHeaders = computed(() => {
+  if (currentRole.value === 'MEMBRE') {
+    return ['Date', 'Montant']
+  }
+  if (currentRole.value === 'LEADER' || currentRole.value === 'COLLABORATOR') {
+    return ['Nom', 'Groupe', 'Date', 'Montant']
+  }
+  return ['Nom', 'Date', 'Montant']
+})
+
+const caisseExportRows = computed(() => {
+  const isMembre = currentRole.value === 'MEMBRE'
+  const isLeaderOrCollab = currentRole.value === 'LEADER' || currentRole.value === 'COLLABORATOR'
+
+  const pRows = (paiementsFiltres.value || []).map(p => {
+    if (isMembre) return [p.date || '', formatCurrency(p.montant)]
+    if (isLeaderOrCollab) return [p.nom || '', getGroupeLabel(p.groupeId || p.groupe), p.date || '', formatCurrency(p.montant)]
+    return [p.nom || '', p.date || '', formatCurrency(p.montant)]
+  })
+
+  const aRows = (autresCaissesFiltres.value || []).map(item => {
+    if (isMembre) return [item.date || '', formatCurrency(item.montant)]
+    if (isLeaderOrCollab) return [item.nom || '', getGroupeLabel(item.groupeId || item.groupe), item.date || '', formatCurrency(item.montant)]
+    return [item.nom || '', item.date || '', formatCurrency(item.montant)]
+  })
+
+  return [...pRows, ...aRows]
+})
+
+const caisseExportSummary = computed(() => {
+  const totalVal = caisseSelectionnee.value?.id === 'offrandes' ? totalCaisseComplet.value : (totalCaisseComplet.value || totalAutresCaisses.value)
+  return [
+    { label: 'Total ' + (caisseSelectionnee.value?.nom || 'Caisse'), value: formatCurrency(totalVal) }
+  ]
+})
+
+onMounted(() => {
+  getData('transactions')
+  fetchFinanceData()
+})
 </script>
 
 <style scoped>
@@ -571,6 +590,15 @@ th {
 .filtre-btn.actif {
   background: var(--primary-dark);
   color: white;
+}
+
+.header-with-export {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 @media (max-width: 768px) {

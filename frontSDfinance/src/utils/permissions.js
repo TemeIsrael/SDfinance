@@ -19,7 +19,7 @@ export const PERMISSIONS = {
   finance: {
     canView: [ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.LEADER, ROLES.COLLABORATOR],
     canViewPersonal: [ROLES.MEMBRE],
-    canManage: [ROLES.COLLABORATOR], // only collaborators can edit the church caisse
+    canManage: [ROLES.COLLABORATOR, ROLES.TRESORIER_CAISSIER, ROLES.PRESIDENT], // Trésorier, Président et Collaborateur peuvent saisir/gérer les finances
   },
   events: {
     canView: [ROLES.PRESIDENT, ROLES.TRESORIER_CAISSIER, ROLES.LEADER], // Tresorier pour la finance liée

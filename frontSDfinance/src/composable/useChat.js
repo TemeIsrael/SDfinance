@@ -138,21 +138,16 @@ export const useChat = () => {
 
   const selectDiscussion = async (discussion, token) => {
     activeDiscussion.value = discussion;
-    // If the discussion object already contains a `messages` array (mock data), use it directly.
-    if (discussion.messages && Array.isArray(discussion.messages)) {
-      activeDiscussionMessages.value = discussion.messages;
-    } else {
-      activeDiscussionMessages.value = [];
-      try {
-        const res = await fetch(`/api/messaging/discussions/${discussion.id}/messages`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          activeDiscussionMessages.value = await res.json();
-        }
-      } catch (err) {
-        console.error('Failed to load messages history:', err);
+    activeDiscussionMessages.value = [];
+    try {
+      const res = await fetch(`/api/messaging/discussions/${discussion.id}/messages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        activeDiscussionMessages.value = await res.json();
       }
+    } catch (err) {
+      console.error('Failed to load messages history:', err);
     }
     // Subscribe to live updates for this discussion.
     subscribeToDiscussion(discussion.id);
@@ -174,7 +169,7 @@ export const useChat = () => {
     socket.value.send(frame);
   };
 
-  const startNewDiscussion = async (counterpartUsername, token) => {
+  const initGlobalDiscussion = async (token) => {
     try {
       const res = await fetch('/api/messaging/discussions', {
         method: 'POST',
@@ -182,18 +177,18 @@ export const useChat = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ counterpartUsername })
+        body: JSON.stringify({})
       });
       if (res.ok) {
-        const newDiscussion = await res.json();
-        const exists = discussions.value.find(d => d.id === newDiscussion.id);
+        const global = await res.json();
+        const exists = discussions.value.find(d => d.id === global.id);
         if (!exists) {
-          discussions.value.unshift(newDiscussion);
+          discussions.value.unshift(global);
         }
-        await selectDiscussion(newDiscussion, token);
+        await selectDiscussion(global, token);
       }
     } catch (err) {
-      console.error('Failed to create/fetch discussion:', err);
+      console.error('Failed to initialize global discussion:', err);
     }
   };
 
@@ -207,6 +202,6 @@ export const useChat = () => {
     disconnect,
     selectDiscussion,
     sendMessage,
-    startNewDiscussion
+    initGlobalDiscussion
   };
 };

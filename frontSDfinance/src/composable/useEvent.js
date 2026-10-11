@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 
 export const useEvent = () => {
   const { currentUser, state } = useAuthStore()
-  const token = state.token
+  const token = computed(() => state.token)
 
   const events = ref([])          // [{id, title, startDate, ...}]
   const activeEvent = ref(null)
@@ -11,12 +11,12 @@ export const useEvent = () => {
   const yearFilter = ref('')
   const expenseYearFilter = ref('')
 
-  const isLeader = computed(() => currentUser?.role === 'LEADER')
-  const isPresident = computed(() => currentUser?.role === 'PRESIDENT')
+  const isLeader = computed(() => ['LEADER', 'PRESIDENT'].includes(currentUser.value?.role))
+  const isPresident = computed(() => currentUser.value?.role === 'PRESIDENT')
 
   const fetchEvents = async () => {
     const res = await fetch('/api/events', {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token.value}` }
     })
     if (res.ok) {
       events.value = await res.json()
@@ -31,7 +31,7 @@ export const useEvent = () => {
 
   const fetchExpenses = async (eventId) => {
     const res = await fetch(`/api/events/${eventId}/expenses`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token.value}` }
     })
     if (res.ok) expenses.value = await res.json()
   }
@@ -43,7 +43,7 @@ export const useEvent = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token.value}`
       },
       body: JSON.stringify(payload)
     })
@@ -57,7 +57,7 @@ export const useEvent = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token.value}`
         },
         body: JSON.stringify(payload)
       })
@@ -70,19 +70,19 @@ export const useEvent = () => {
   const deleteExpense = async (expId) => {
     if (!isLeader.value) return
     await fetch(`/api/events/${activeEvent.value.id}/expenses/${expId}`,
-      { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      { method: 'DELETE', headers: { Authorization: `Bearer ${token.value}` } })
     expenses.value = expenses.value.filter(e => e.id !== expId)
   }
 
   // ----- Update event (leaders allowed) -----
   const updateEvent = async (eventId, payload) => {
-    if (!isLeader.value && currentUser?.role !== 'PRESIDENT') return
+    if (!isLeader.value && currentUser.value?.role !== 'PRESIDENT') return
     const res = await fetch(`/api/events/${eventId}`,
       {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token.value}`
         },
         body: JSON.stringify(payload)
       })
@@ -99,7 +99,7 @@ export const useEvent = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token.value}`
       },
       body: JSON.stringify(payload)
     })

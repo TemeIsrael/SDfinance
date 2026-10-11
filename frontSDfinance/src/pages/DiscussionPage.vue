@@ -1,30 +1,7 @@
 <template>
   <!-- Page discussion (style discussion.html) -->
   <div class="contenu">
-    <!-- Panneau gauche : liste des conversations -->
-    <div class="panneau-gauche">
-      <h3>Historique des conversations</h3>
-      
-      <div class="recherche" style="margin-bottom: 8px;">
-        <input type="text" v-model="nouveauContact" placeholder="Nouveau contact (Entrée)" @keyup.enter="creerDiscussion" />
-      </div>
 
-      <div class="recherche">
-        <input type="text" v-model="recherche" placeholder="Rechercher..." />
-      </div>
-      <div class="card-list">
-        <div
-          v-for="conv in conversationsFiltrees"
-          :key="conv.id"
-          class="card"
-          :class="{ active: activeDiscussion?.id === conv.id }"
-          @click="ouvrirConversation(conv)"
-        >
-          <div class="title">{{ getDiscussionName(conv) }}</div>
-          <div class="bdy">{{ conv.lastMessagePreview || 'Nouvelle conversation' }}</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Zone de chat -->
     <div class="Discussion">
@@ -80,41 +57,8 @@ const {
   disconnect,
   selectDiscussion,
   sendMessage: sendChatMsg,
-  startNewDiscussion
+  initGlobalDiscussion
 } = useChat()
-
-// -----------------------------------------------------------------------------
-// Mock data – used when the backend returns no discussions (e.g. during UI preview)
-// -----------------------------------------------------------------------------
-const mockDiscussions = [
-  {
-    id: 1,
-    counterpartUsername: 'Alice',
-    lastMessagePreview: 'Hey, comment ça va ?',
-    // messages are stored in the chat service; we simulate a few here
-    messages: [
-      { id: 1, senderUsername: 'Alice', content: 'Salut ! 😊', sentAt: new Date().toISOString() },
-      { id: 2, senderUsername: currentUser?.username ?? 'Vous', content: 'Ça va bien, merci !', sentAt: new Date().toISOString() }
-    ]
-  },
-  {
-    id: 2,
-    counterpartUsername: 'Bob',
-    lastMessagePreview: 'Pas de nouvelle ?',
-    messages: [
-      { id: 3, senderUsername: 'Bob', content: 'Tu as des retours ?', sentAt: new Date().toISOString() },
-      { id: 4, senderUsername: currentUser?.username ?? 'Vous', content: 'Je travaille dessus.', sentAt: new Date().toISOString() }
-    ]
-  }
-]
-
-// If the real service returns an empty list, fall back to the mock data.
-if (!discussions.value || discussions.value.length === 0) {
-  discussions.value = mockDiscussions
-  // In mock mode we consider the WebSocket connection active so the chat input is usable
-  isConnected.value = true
-}
-
 
 const recherche = ref('')
 const messageInput = ref('')
@@ -123,7 +67,7 @@ const nouveauContact = ref('')
 const conversationsFiltrees = computed(() => {
   if (!recherche.value) return discussions.value
   return discussions.value.filter((c) => {
-    const nom = c.counterpartUsername || 'Inconnu'
+    const nom = c.counterpartUsername || c.ownerUsername || 'Global'
     return nom.toLowerCase().includes(recherche.value.toLowerCase())
   })
 })
@@ -131,6 +75,7 @@ const conversationsFiltrees = computed(() => {
 onMounted(async () => {
   if (token) {
     await fetchDiscussions(token)
+    await initGlobalDiscussion(token)
     connect(token)
   }
 })
@@ -140,7 +85,7 @@ onUnmounted(() => {
 })
 
 const getDiscussionName = (conv) => {
-  return conv.counterpartUsername || 'Inconnu'
+  return 'Discussion'
 }
 
 const ouvrirConversation = (conv) => {
@@ -153,11 +98,10 @@ const envoyerMessage = () => {
   messageInput.value = ''
 }
 
+// La création de nouvelles discussions individuelles n'est plus nécessaire avec la discussion globale.
+// Fonction conservée pour compatibilité éventuelle, mais ne fait rien.
 const creerDiscussion = async () => {
-  if (nouveauContact.value.trim()) {
-    await startNewDiscussion(nouveauContact.value.trim(), token)
-    nouveauContact.value = ''
-  }
+  // No‑op for global discussion
 }
 </script>
 
